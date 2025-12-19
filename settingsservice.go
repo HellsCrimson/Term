@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"term/database"
 )
 
@@ -20,7 +21,13 @@ func (s *SettingsService) GetSetting(key string) (*database.Setting, error) {
 
 // GetAllSettings retrieves all settings as a map
 func (s *SettingsService) GetAllSettings() (map[string]string, error) {
-	return s.db.GetAllSettings()
+	settings, err := s.db.GetAllSettings()
+	if err != nil {
+		fmt.Printf("BACKEND GetAllSettings error: %v\n", err)
+		return nil, err
+	}
+	fmt.Printf("BACKEND GetAllSettings result: %+v\n", settings)
+	return settings, nil
 }
 
 // SetSetting sets or updates a setting
@@ -96,4 +103,46 @@ func (s *SettingsService) GetTabSnapshots() (string, error) {
 		return "[]", nil // return empty array if not found
 	}
 	return setting.Value, nil
+}
+
+// GetRestoreTabsOnStartup retrieves the restore tabs on startup setting
+func (s *SettingsService) GetRestoreTabsOnStartup() (string, error) {
+	setting, err := s.db.GetSetting("restore_tabs_on_startup")
+	if err != nil {
+		return "true", nil // default to true
+	}
+	return setting.Value, nil
+}
+
+// SetRestoreTabsOnStartup updates the restore tabs on startup setting
+func (s *SettingsService) SetRestoreTabsOnStartup(restore string) error {
+	fmt.Printf("BACKEND SetRestoreTabsOnStartup called with value: %s\n", restore)
+	err := s.db.SetSetting("restore_tabs_on_startup", restore, "bool")
+	if err != nil {
+		fmt.Printf("BACKEND SetRestoreTabsOnStartup error: %v\n", err)
+		return err
+	}
+	fmt.Printf("BACKEND SetRestoreTabsOnStartup saved successfully\n")
+	return nil
+}
+
+// GetConfirmTabClose retrieves the confirm tab close setting
+func (s *SettingsService) GetConfirmTabClose() (string, error) {
+	setting, err := s.db.GetSetting("confirm_tab_close")
+	if err != nil {
+		return "false", nil // default to false
+	}
+	return setting.Value, nil
+}
+
+// SetConfirmTabClose updates the confirm tab close setting
+func (s *SettingsService) SetConfirmTabClose(confirm string) error {
+	fmt.Printf("BACKEND SetConfirmTabClose called with value: %s\n", confirm)
+	err := s.db.SetSetting("confirm_tab_close", confirm, "bool")
+	if err != nil {
+		fmt.Printf("BACKEND SetConfirmTabClose error: %v\n", err)
+		return err
+	}
+	fmt.Printf("BACKEND SetConfirmTabClose saved successfully\n")
+	return nil
 }

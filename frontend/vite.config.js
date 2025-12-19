@@ -5,7 +5,10 @@ import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [svelte(), wails("./bindings")],
+  plugins: [
+    svelte(),
+    wails("./bindings"),
+  ],
   resolve: {
     alias: {
       '$bindings': path.resolve('./bindings'),

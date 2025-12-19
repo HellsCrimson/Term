@@ -13,27 +13,55 @@
   let fontFamily = $state(settingsStore.settings.fontFamily);
   let fontSize = $state(settingsStore.settings.fontSize);
   let autoLaunch = $state(settingsStore.settings.autoLaunch);
+  let restoreTabsOnStartup = $state(settingsStore.settings.restoreTabsOnStartup);
+  let confirmTabClose = $state(settingsStore.settings.confirmTabClose);
+  let saving = $state(false);
 
-  // Update local state when settings change
+  // Update local state when settings change (but not while saving)
   $effect(() => {
-    theme = settingsStore.settings.theme;
-    fontFamily = settingsStore.settings.fontFamily;
-    fontSize = settingsStore.settings.fontSize;
-    autoLaunch = settingsStore.settings.autoLaunch;
+    if (!saving) {
+      theme = settingsStore.settings.theme;
+      fontFamily = settingsStore.settings.fontFamily;
+      fontSize = settingsStore.settings.fontSize;
+      autoLaunch = settingsStore.settings.autoLaunch;
+      restoreTabsOnStartup = settingsStore.settings.restoreTabsOnStartup;
+      confirmTabClose = settingsStore.settings.confirmTabClose;
+    }
   });
 
   async function handleSave() {
+    saving = true;
     try {
-      await Promise.all([
-        settingsStore.setTheme(theme),
-        settingsStore.setFontFamily(fontFamily),
-        settingsStore.setFontSize(fontSize),
-        settingsStore.setAutoLaunch(autoLaunch)
-      ]);
+      console.log('=== DIALOG handleSave START ===');
+      console.log(`Local values: theme=${theme}, fontFamily=${fontFamily}, fontSize=${fontSize}`);
+      console.log(`Local values: autoLaunch=${autoLaunch}, restoreTabsOnStartup=${restoreTabsOnStartup}, confirmTabClose=${confirmTabClose}`);
+
+      // Save sequentially to avoid database locks
+      await settingsStore.setTheme(theme);
+      console.log('Theme saved');
+
+      await settingsStore.setFontFamily(fontFamily);
+      console.log('FontFamily saved');
+
+      await settingsStore.setFontSize(fontSize);
+      console.log('FontSize saved');
+
+      await settingsStore.setAutoLaunch(autoLaunch);
+      console.log('AutoLaunch saved');
+
+      await settingsStore.setRestoreTabsOnStartup(restoreTabsOnStartup);
+      console.log('RestoreTabsOnStartup saved');
+
+      await settingsStore.setConfirmTabClose(confirmTabClose);
+      console.log('ConfirmTabClose saved');
+
+      console.log('=== DIALOG handleSave END - calling onClose ===');
       onClose();
     } catch (error) {
       console.error('Failed to save settings:', error);
       alert('Failed to save settings: ' + error);
+    } finally {
+      saving = false;
     }
   }
 
@@ -43,6 +71,8 @@
     fontFamily = settingsStore.settings.fontFamily;
     fontSize = settingsStore.settings.fontSize;
     autoLaunch = settingsStore.settings.autoLaunch;
+    restoreTabsOnStartup = settingsStore.settings.restoreTabsOnStartup;
+    confirmTabClose = settingsStore.settings.confirmTabClose;
     onClose();
   }
 
@@ -153,6 +183,44 @@
                 <input
                   type="checkbox"
                   bind:checked={autoLaunch}
+                  class="sr-only peer"
+                />
+                <div
+                  class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
+                ></div>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium">Restore tabs on startup</label>
+                <p class="text-xs text-gray-400">
+                  Automatically restore previously open tabs when app starts
+                </p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  bind:checked={restoreTabsOnStartup}
+                  class="sr-only peer"
+                />
+                <div
+                  class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
+                ></div>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium">Confirm tab close</label>
+                <p class="text-xs text-gray-400">
+                  Show confirmation dialog when closing active tabs
+                </p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  bind:checked={confirmTabClose}
                   class="sr-only peer"
                 />
                 <div

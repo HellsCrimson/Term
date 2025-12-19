@@ -4,7 +4,7 @@
  */
 {
   "compilerOptions": {
-    "baseUrl": "/",
+    "baseUrl": ".",
     "allowJs": true,
     "moduleResolution": "bundler",
     /**
@@ -18,7 +18,7 @@
     /**
      * Enable checkJs if you'd like type checking in `.svelte` and `.js` files.
      */
-    "checkJs": false,
+    "checkJs": true,
     "strict": true,
     "skipLibCheck": true,
     "paths": {
@@ -26,5 +26,12 @@
       "$bindings/*": ["bindings/*"]
     }
   },
-  "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.svelte", "bindings"]
+  "include": [
+    "src/**/*.d.ts",
+    "src/**/*.js",
+    "src/**/*.svelte",
+    "bindings/**/*.ts",
+    "src/main.ts",
+    "src/main.ts"
+  ],
 }

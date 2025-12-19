@@ -6,6 +6,8 @@ export interface AppSettings {
   fontFamily: string;
   fontSize: number;
   autoLaunch: boolean;
+  restoreTabsOnStartup: boolean;
+  confirmTabClose: boolean;
 }
 
 class SettingsStore {
@@ -13,20 +15,30 @@ class SettingsStore {
     theme: 'dark',
     fontFamily: 'monospace',
     fontSize: 14,
-    autoLaunch: true
+    autoLaunch: true,
+    restoreTabsOnStartup: true,
+    confirmTabClose: false
   });
   loading = $state(false);
 
   async loadSettings() {
     this.loading = true;
     try {
+      console.log('=== STORE loadSettings START ===');
       const allSettings = await SettingsService.GetAllSettings();
+      console.log('Raw settings from backend:', allSettings);
+
       this.settings = {
         theme: allSettings.theme || 'dark',
         fontFamily: allSettings.font_family || 'monospace',
         fontSize: parseInt(allSettings.font_size || '14'),
-        autoLaunch: allSettings.auto_launch === 'true'
+        autoLaunch: allSettings.auto_launch === 'true',
+        restoreTabsOnStartup: (allSettings.restore_tabs_on_startup || 'true') === 'true',
+        confirmTabClose: (allSettings.confirm_tab_close || 'false') === 'true'
       };
+
+      console.log('Parsed settings:', this.settings);
+      console.log('=== STORE loadSettings END ===');
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
@@ -67,6 +79,48 @@ class SettingsStore {
       this.settings.autoLaunch = autoLaunch;
     } catch (error) {
       console.error('Failed to set auto launch:', error);
+    }
+  }
+
+  async setRestoreTabsOnStartup(restore: boolean) {
+    try {
+      console.log(`Setting restoreTabsOnStartup to: ${restore}`);
+      await SettingsService.SetRestoreTabsOnStartup(restore.toString());
+      this.settings.restoreTabsOnStartup = restore;
+      console.log(`restoreTabsOnStartup saved successfully`);
+    } catch (error) {
+      console.error('Failed to set restore tabs on startup:', error);
+      throw error;
+    }
+  }
+
+  async setConfirmTabClose(confirm: boolean) {
+    try {
+      console.log(`Setting confirmTabClose to: ${confirm}`);
+      await SettingsService.SetConfirmTabClose(confirm.toString());
+      this.settings.confirmTabClose = confirm;
+      console.log(`confirmTabClose saved successfully`);
+    } catch (error) {
+      console.error('Failed to set confirm tab close:', error);
+      throw error;
+    }
+  }
+
+  async saveTabSnapshots(tabs: Array<{sessionId: string, sessionName: string, sessionType: string}>) {
+    try {
+      await SettingsService.SaveTabSnapshots(JSON.stringify(tabs));
+    } catch (error) {
+      console.error('Failed to save tab snapshots:', error);
+    }
+  }
+
+  async getTabSnapshots(): Promise<Array<{sessionId: string, sessionName: string, sessionType: string}>> {
+    try {
+      const snapshots = await SettingsService.GetTabSnapshots();
+      return JSON.parse(snapshots);
+    } catch (error) {
+      console.error('Failed to get tab snapshots:', error);
+      return [];
     }
   }
 }

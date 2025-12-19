@@ -1,6 +1,8 @@
 import type { Terminal } from 'ghostty-web';
 import * as TerminalService from '$bindings/term/terminalservice';
 import { Events } from '@wailsio/runtime';
+import { settingsStore } from './settings.svelte';
+import * as LoggingService from '$bindings/term/loggingservice';
 
 export interface TerminalTab {
   id: string;
@@ -53,6 +55,7 @@ class TerminalsStore {
 
     this.tabs.push(tab);
     this.setActiveTab(id);
+    this.saveTabSnapshots();
 
     return tab;
   }
@@ -72,18 +75,37 @@ class TerminalsStore {
     return this.tabs.find(tab => tab.id === id);
   }
 
-  closeTab(id: string) {
+  closeTab(id: string, skipConfirmation: boolean = false) {
+    LoggingService.Log(`closeTab called: id=${id}, skipConfirmation=${skipConfirmation}`, "INFO");
     const tab = this.getTab(id);
-    if (tab) {
-      // Close backend session
-      if (!tab.exited) {
-        this.closeSession(tab.backendSessionId);
-      }
+    if (!tab) {
+      LoggingService.Log('Tab not found', "INFO");
+      return;
+    }
 
-      // Dispose terminal
-      if (tab.terminal) {
-        tab.terminal.dispose();
+    LoggingService.Log(`Tab found: ${tab.sessionName}, exited=${tab.exited}`, "INFO");
+    LoggingService.Log(`confirmTabClose setting: ${settingsStore.settings.confirmTabClose}`, "INFO");
+
+    // Check for confirmation if enabled and not exited
+    if (!skipConfirmation && settingsStore.settings.confirmTabClose && !tab.exited) {
+      LoggingService.Log('Showing confirmation dialog', "INFO");
+      if (!confirm(`Close tab "${tab.sessionName}"?`)) {
+        LoggingService.Log('User cancelled close', "INFO");
+        return;
       }
+      LoggingService.Log('User confirmed close', "INFO");
+    } else {
+      LoggingService.Log(`Skipping confirmation: skipConfirmation=${skipConfirmation}, setting=${settingsStore.settings.confirmTabClose}, exited=${tab.exited}`, "INFO");
+    }
+
+    // Close backend session
+    if (!tab.exited) {
+      this.closeSession(tab.backendSessionId);
+    }
+
+    // Dispose terminal
+    if (tab.terminal) {
+      tab.terminal.dispose();
     }
 
     const index = this.tabs.findIndex(t => t.id === id);
@@ -97,6 +119,9 @@ class TerminalsStore {
     } else if (this.tabs.length === 0) {
       this.activeTabId = null;
     }
+
+    LoggingService.Log(`Tab closed successfully, ${this.tabs.length} tabs remaining`, "INFO");
+    this.saveTabSnapshots();
   }
 
   closeOtherTabs(id: string) {
@@ -184,6 +209,34 @@ class TerminalsStore {
     } catch (error) {
       console.error('Failed to close session:', error);
     }
+  }
+
+  saveTabSnapshots() {
+    // Save only non-exited tabs
+    const snapshots = this.tabs
+      .filter(tab => !tab.exited)
+      .map(tab => ({
+        sessionId: tab.sessionId,
+        sessionName: tab.sessionName,
+        sessionType: tab.sessionType
+      }));
+    settingsStore.saveTabSnapshots(snapshots);
+  }
+
+  async restoreTabs() {
+    LoggingService.Log(`restoreTabs called, restoreTabsOnStartup=${settingsStore.settings.restoreTabsOnStartup}`, "INFO");
+    if (!settingsStore.settings.restoreTabsOnStartup) {
+      LoggingService.Log('Tab restoration disabled', "INFO");
+      return;
+    }
+
+    const snapshots = await settingsStore.getTabSnapshots();
+    LoggingService.Log(`Found ${snapshots.length} tab snapshots to restore`, "INFO");
+    for (const snapshot of snapshots) {
+      LoggingService.Log(`Restoring tab: ${snapshot.sessionName} (${snapshot.sessionType})`, "INFO");
+      this.createTab(snapshot.sessionId, snapshot.sessionName, snapshot.sessionType);
+    }
+    LoggingService.Log(`Tab restoration complete, ${this.tabs.length} tabs created`, "INFO");
   }
 }
 
