@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles */
+@layer base {
+  html, body {
+    @apply h-full w-full overflow-hidden m-0 p-0;
+  }
+
+  body {
+    @apply bg-gray-900 text-gray-100;
+  }
+}
+
+/* Terminal container styles */
+@layer components {
+  .terminal-container {
+    @apply w-full h-full bg-black;
+  }
+
+  .terminal-wrapper {
+    @apply w-full h-full p-2;
+  }
+
+  /* Custom scrollbar for terminal */
+  .terminal-container ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  .terminal-container ::-webkit-scrollbar-track {
+    @apply bg-gray-800;
+  }
+
+  .terminal-container ::-webkit-scrollbar-thumb {
+    @apply bg-gray-600 rounded;
+  }
+
+  .terminal-container ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+
+  /* Session tree styles */
+  .session-tree {
+    @apply overflow-y-auto overflow-x-hidden;
+  }
+
+  .session-node {
+    @apply px-2 py-1 cursor-pointer hover:bg-gray-700 rounded transition-colors;
+  }
+
+  .session-node.active {
+    @apply bg-blue-600 hover:bg-blue-700;
+  }
+
+  /* Tab styles */
+  .terminal-tab {
+    @apply px-4 py-2 cursor-pointer border-b-2 border-transparent hover:border-gray-500 transition-colors;
+  }
+
+  .terminal-tab.active {
+    @apply border-blue-500 bg-gray-800;
+  }
+
+  .terminal-tab.exited {
+    @apply text-gray-500;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  .drag-none {
+    -webkit-app-region: drag;
+  }
+
+  .drag-allow {
+    -webkit-app-region: no-drag;
+  }
+}
