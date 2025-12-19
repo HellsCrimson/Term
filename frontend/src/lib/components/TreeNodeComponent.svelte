@@ -27,6 +27,8 @@
   let dragOverPosition = $state<'before' | 'inside' | 'after' | null>(null);
   let showEditDialog = $state(false);
   let hasMoved = $state(false);
+  let dragStartX = $state(0);
+  let dragStartY = $state(0);
 
   function toggleExpand() {
     if (node.session.type === 'folder') {
@@ -171,6 +173,8 @@
 
     hasMoved = false;
     isDragging = false;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
 
     e.dataTransfer!.effectAllowed = 'move';
     e.dataTransfer!.setData('application/json', JSON.stringify({
@@ -181,16 +185,22 @@
   }
 
   function handleDrag(e: DragEvent) {
-    // Once we detect actual dragging movement, set the flag
-    if (!hasMoved && (e.clientX !== 0 || e.clientY !== 0)) {
-      hasMoved = true;
-      isDragging = true;
+    // Only consider it moved if mouse has moved more than 5 pixels from start position
+    if (!hasMoved && e.clientX !== 0 && e.clientY !== 0) {
+      const deltaX = Math.abs(e.clientX - dragStartX);
+      const deltaY = Math.abs(e.clientY - dragStartY);
+      if (deltaX > 5 || deltaY > 5) {
+        hasMoved = true;
+        isDragging = true;
+      }
     }
   }
 
   function handleDragEnd() {
     isDragging = false;
     hasMoved = false;
+    dragStartX = 0;
+    dragStartY = 0;
   }
 
   function handleDragOver(e: DragEvent) {
@@ -307,7 +317,7 @@
       }
 
     } catch (error) {
-      LoggingService.Log('Drop failed: ' + error);
+      LoggingService.Log('Drop failed: ' + error, "ERROR");
       alert('Failed to move: ' + error);
     }
   }
@@ -337,14 +347,16 @@
     ondragleave={handleDragLeave}
     ondrop={handleDrop}
     onclick={(e) => {
+      e.stopPropagation();
       if (!editingName && !hasMoved) {
         toggleExpand();
-        dispatch('click');
+        dispatch('click', node.session);
       }
     }}
     ondblclick={(e) => {
+      e.stopPropagation();
       if (!editingName && !hasMoved) {
-        dispatch('dblclick');
+        dispatch('dblclick', node.session);
       }
     }}
     oncontextmenu={handleContextMenu}
@@ -417,10 +429,10 @@
   }
 
   .session-node[draggable="true"] {
-    cursor: grab;
+    cursor: pointer;
   }
 
-  .session-node[draggable="true"]:active {
+  .session-node.opacity-50 {
     cursor: grabbing;
   }
 </style>

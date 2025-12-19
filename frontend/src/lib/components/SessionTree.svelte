@@ -44,8 +44,8 @@
       <TreeNodeComponent
         {node}
         selected={selectedNodeId === node.session.id}
-        on:click={() => handleNodeClick(node.session)}
-        on:dblclick={() => handleNodeDoubleClick(node.session)}
+        on:click={(e) => handleNodeClick(e.detail)}
+        on:dblclick={(e) => handleNodeDoubleClick(e.detail)}
       />
     {/each}
   {/if}

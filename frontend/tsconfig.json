@@ -4,6 +4,7 @@
  */
 {
   "compilerOptions": {
+    "baseUrl": "/",
     "allowJs": true,
     "moduleResolution": "bundler",
     /**
@@ -20,6 +21,10 @@
     "checkJs": false,
     "strict": true,
     "skipLibCheck": true,
+    "paths": {
+      "$lib/*": ["src/lib/*"],
+      "$bindings/*": ["bindings/*"]
+    }
   },
   "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.svelte", "bindings"]
 }
