@@ -18,6 +18,7 @@
   let sshPassword = $state('');
   let sshKeyPath = $state('');
   let loading = $state(false);
+  let inheritedConfig = $state<Record<string, string>>({});
 
   // Load session config when dialog opens
   $effect(() => {
@@ -32,14 +33,27 @@
 
     loading = true;
     try {
-      const config = await sessionsStore.getEffectiveConfig(session.id);
+      // Load both direct config and effective (inherited) config
+      const [directConfig, effectiveConfig] = await Promise.all([
+        sessionsStore.getSessionConfig(session.id),
+        sessionsStore.getEffectiveConfig(session.id)
+      ]);
 
-      sshHost = config.ssh_host || '';
-      sshPort = config.ssh_port || '22';
-      sshUsername = config.ssh_username || '';
-      sshAuthMethod = (config.ssh_auth_method as 'password' | 'key') || 'password';
-      sshPassword = config.ssh_password || '';
-      sshKeyPath = config.ssh_key_path || '';
+      // Determine which values are inherited
+      inheritedConfig = {};
+      for (const key in effectiveConfig) {
+        if (!(key in directConfig)) {
+          inheritedConfig[key] = effectiveConfig[key];
+        }
+      }
+
+      // Set form values to direct config (what's actually set on this session/folder)
+      sshHost = directConfig.ssh_host || '';
+      sshPort = directConfig.ssh_port || '';
+      sshUsername = directConfig.ssh_username || '';
+      sshAuthMethod = (directConfig.ssh_auth_method as 'password' | 'key') || 'password';
+      sshPassword = directConfig.ssh_password || '';
+      sshKeyPath = directConfig.ssh_key_path || '';
     } catch (error) {
       console.error('Failed to load config:', error);
     } finally {
@@ -56,17 +70,10 @@
     }
 
     // Validate SSH fields if it's an SSH session
+    // Only host is required - other fields can be inherited
     if (session.sessionType === 'ssh') {
-      if (!sshHost.trim() || !sshUsername.trim()) {
-        alert('SSH host and username are required');
-        return;
-      }
-      if (sshAuthMethod === 'password' && !sshPassword) {
-        alert('SSH password is required');
-        return;
-      }
-      if (sshAuthMethod === 'key' && !sshKeyPath.trim()) {
-        alert('SSH key path is required');
+      if (!sshHost.trim()) {
+        alert('SSH host is required (other fields can be inherited from folder)');
         return;
       }
     }
@@ -80,16 +87,42 @@
         });
       }
 
-      // Save SSH config if SSH session
+      // Save SSH config if SSH session (only save non-empty values)
       if (session.sessionType === 'ssh') {
-        await sessionsStore.setSessionConfig(session.id, 'ssh_host', sshHost.toString());
-        await sessionsStore.setSessionConfig(session.id, 'ssh_port', sshPort.toString());
-        await sessionsStore.setSessionConfig(session.id, 'ssh_username', sshUsername.toString());
+        // Host is required
+        if (sshHost.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'ssh_host', sshHost.toString());
+        }
+
+        // Optional fields - only save if not empty
+        if (sshPort.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'ssh_port', sshPort.toString());
+        }
+        if (sshUsername.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'ssh_username', sshUsername.toString());
+        }
+
+        // Save auth method (always, since it's a user choice)
         await sessionsStore.setSessionConfig(session.id, 'ssh_auth_method', sshAuthMethod.toString());
 
-        if (sshAuthMethod === 'password') {
+        // Save credentials only if provided
+        if (sshAuthMethod === 'password' && sshPassword.trim()) {
           await sessionsStore.setSessionConfig(session.id, 'ssh_password', sshPassword.toString());
-        } else {
+        } else if (sshAuthMethod === 'key' && sshKeyPath.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'ssh_key_path', sshKeyPath.toString());
+        }
+      }
+
+      // Save folder config (inherited by children)
+      if (session.type === 'folder') {
+        // Only save non-empty values
+        if (sshUsername.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'ssh_username', sshUsername.toString());
+        }
+        if (sshPort.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'ssh_port', sshPort.toString());
+        }
+        if (sshKeyPath.trim()) {
           await sessionsStore.setSessionConfig(session.id, 'ssh_key_path', sshKeyPath.toString());
         }
       }
@@ -150,18 +183,24 @@
                     type="text"
                     bind:value={sshPort}
                     class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="22"
+                    placeholder={inheritedConfig.ssh_port ? `Inherited: ${inheritedConfig.ssh_port}` : '22'}
                   />
+                  {#if inheritedConfig.ssh_port && !sshPort}
+                    <p class="text-xs text-yellow-400 mt-1">↓ Inherited: {inheritedConfig.ssh_port}</p>
+                  {/if}
                 </div>
 
                 <div>
-                  <label class="block text-xs font-medium mb-1">Username *</label>
+                  <label class="block text-xs font-medium mb-1">Username</label>
                   <input
                     type="text"
                     bind:value={sshUsername}
                     class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="root"
+                    placeholder={inheritedConfig.ssh_username ? `Inherited: ${inheritedConfig.ssh_username}` : 'root'}
                   />
+                  {#if inheritedConfig.ssh_username && !sshUsername}
+                    <p class="text-xs text-yellow-400 mt-1">↓ Inherited: {inheritedConfig.ssh_username}</p>
+                  {/if}
                 </div>
               </div>
 
@@ -188,16 +227,70 @@
                 </div>
               {:else}
                 <div>
-                  <label class="block text-xs font-medium mb-1">Key Path *</label>
+                  <label class="block text-xs font-medium mb-1">Key Path</label>
                   <input
                     type="text"
                     bind:value={sshKeyPath}
                     class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="~/.ssh/id_rsa"
+                    placeholder={inheritedConfig.ssh_key_path ? `Inherited: ${inheritedConfig.ssh_key_path}` : '~/.ssh/id_rsa'}
                   />
-                  <p class="text-xs text-gray-500 mt-1">Path to your private key file</p>
+                  {#if inheritedConfig.ssh_key_path && !sshKeyPath}
+                    <p class="text-xs text-yellow-400 mt-1">↓ Inherited: {inheritedConfig.ssh_key_path}</p>
+                  {:else}
+                    <p class="text-xs text-gray-500 mt-1">Path to your private key file</p>
+                  {/if}
                 </div>
               {/if}
+            </div>
+          {/if}
+
+          {#if session.type === 'folder'}
+            <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+              <h4 class="text-sm font-medium text-green-400">Folder Configuration (Inherited by Children)</h4>
+              <p class="text-xs text-gray-400">These settings will be inherited by all sessions and subfolders inside this folder.</p>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-xs font-medium mb-1">SSH Username</label>
+                  <input
+                    type="text"
+                    bind:value={sshUsername}
+                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                    placeholder={inheritedConfig.ssh_username ? `Inherited: ${inheritedConfig.ssh_username}` : 'root (inherited by SSH sessions)'}
+                  />
+                  {#if inheritedConfig.ssh_username && !sshUsername}
+                    <p class="text-xs text-yellow-400 mt-1">↓ Inherited from parent: {inheritedConfig.ssh_username}</p>
+                  {/if}
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium mb-1">SSH Port</label>
+                  <input
+                    type="text"
+                    bind:value={sshPort}
+                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                    placeholder={inheritedConfig.ssh_port ? `Inherited: ${inheritedConfig.ssh_port}` : '22 (inherited by SSH sessions)'}
+                  />
+                  {#if inheritedConfig.ssh_port && !sshPort}
+                    <p class="text-xs text-yellow-400 mt-1">↓ Inherited from parent: {inheritedConfig.ssh_port}</p>
+                  {/if}
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium mb-1">SSH Key Path</label>
+                  <input
+                    type="text"
+                    bind:value={sshKeyPath}
+                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                    placeholder={inheritedConfig.ssh_key_path ? `Inherited: ${inheritedConfig.ssh_key_path}` : '~/.ssh/id_rsa (inherited by SSH sessions)'}
+                  />
+                  {#if inheritedConfig.ssh_key_path && !sshKeyPath}
+                    <p class="text-xs text-yellow-400 mt-1">↓ Inherited from parent: {inheritedConfig.ssh_key_path}</p>
+                  {:else}
+                    <p class="text-xs text-gray-500 mt-1">Children can override these settings</p>
+                  {/if}
+                </div>
+              </div>
             </div>
           {/if}
         </div>

@@ -16,11 +16,37 @@
   let terminal: Terminal | null = null;
   let fitAddon: FitAddon | null = null;
   let resizeObserver: ResizeObserver | null = null;
+  let currentFontSize = $state(settingsStore.settings.fontSize);
 
   // Focus terminal when tab becomes active
   $effect(() => {
     if (tab.active && terminal) {
       terminal.focus();
+    }
+  });
+
+  // Update font size when settings change
+  $effect(() => {
+    currentFontSize = settingsStore.settings.fontSize;
+    if (terminal && fitAddon) {
+      terminal.options.fontSize = currentFontSize;
+
+      // Fit the terminal to the new font size
+      fitAddon.fit();
+
+      // Wait a tick for the terminal to update its dimensions, then notify backend
+      setTimeout(() => {
+        if (terminal) {
+          terminalsStore.resizeSession(
+            tab.backendSessionId,
+            terminal.cols,
+            terminal.rows
+          );
+
+          // Force a terminal refresh to redraw content
+          terminal.refresh(0, terminal.rows - 1);
+        }
+      }, 0);
     }
   });
 
@@ -32,27 +58,27 @@
       fontSize: settingsStore.settings.fontSize,
       cursorBlink: true,
       theme: {
-        background: '#000000',
-        foreground: '#ffffff',
-        cursor: '#ffffff',
-        cursorAccent: '#000000',
-        selectionBackground: 'rgba(255, 255, 255, 0.3)',
-        black: '#000000',
-        red: '#e06c75',
-        green: '#98c379',
-        yellow: '#d19a66',
-        blue: '#61afef',
-        magenta: '#c678dd',
-        cyan: '#56b6c2',
-        white: '#abb2bf',
-        brightBlack: '#5c6370',
-        brightRed: '#e06c75',
-        brightGreen: '#98c379',
-        brightYellow: '#d19a66',
-        brightBlue: '#61afef',
-        brightMagenta: '#c678dd',
-        brightCyan: '#56b6c2',
-        brightWhite: '#ffffff'
+        background: '#1a1b26',
+        foreground: '#c0caf5',
+        cursor: '#c0caf5',
+        cursorAccent: '#1a1b26',
+        selectionBackground: 'rgba(122, 162, 247, 0.3)',
+        black: '#15161e',
+        red: '#f7768e',
+        green: '#9ece6a',
+        yellow: '#e0af68',
+        blue: '#7aa2f7',
+        magenta: '#bb9af7',
+        cyan: '#7dcfff',
+        white: '#a9b1d6',
+        brightBlack: '#414868',
+        brightRed: '#f7768e',
+        brightGreen: '#9ece6a',
+        brightYellow: '#e0af68',
+        brightBlue: '#7aa2f7',
+        brightMagenta: '#bb9af7',
+        brightCyan: '#7dcfff',
+        brightWhite: '#c0caf5'
       }
     });
 
@@ -121,4 +147,6 @@
   });
 </script>
 
-<div class="terminal-container h-full" bind:this={terminalElement}></div>
+<div class="terminal-wrapper h-full bg-[#1a1b26] p-4">
+  <div class="terminal-container h-full" bind:this={terminalElement}></div>
+</div>

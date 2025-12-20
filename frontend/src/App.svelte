@@ -130,6 +130,65 @@
       showNewSessionDialog = true;
       return;
     }
+
+    // Ctrl+Plus/Equal: Increase font size
+    if (e.ctrlKey && (e.key === '+' || e.key === '=')) {
+      e.preventDefault();
+      e.stopPropagation();
+      const currentSize = settingsStore.settings.fontSize;
+      if (currentSize < 32) {
+        settingsStore.setFontSize(currentSize + 1);
+      }
+      return;
+    }
+
+    // Ctrl+Minus: Decrease font size
+    if (e.ctrlKey && e.key === '-') {
+      e.preventDefault();
+      e.stopPropagation();
+      const currentSize = settingsStore.settings.fontSize;
+      if (currentSize > 8) {
+        settingsStore.setFontSize(currentSize - 1);
+      }
+      return;
+    }
+
+    // Ctrl+0: Reset font size
+    if (e.ctrlKey && e.key === '0') {
+      e.preventDefault();
+      e.stopPropagation();
+      settingsStore.setFontSize(14);
+      return;
+    }
+
+    // Ctrl+Shift+C: Copy from terminal
+    if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+      e.preventDefault();
+      e.stopPropagation();
+      const activeTab = terminalsStore.getActiveTab();
+      if (activeTab?.terminal) {
+        const selection = activeTab.terminal.getSelection();
+        if (selection) {
+          navigator.clipboard.writeText(selection).catch(err =>
+            console.error('Failed to copy:', err)
+          );
+        }
+      }
+      return;
+    }
+
+    // Ctrl+Shift+V: Paste to terminal
+    if (e.ctrlKey && e.shiftKey && e.key === 'V') {
+      e.preventDefault();
+      e.stopPropagation();
+      const activeTab = terminalsStore.getActiveTab();
+      if (activeTab) {
+        navigator.clipboard.readText().then(text => {
+          terminalsStore.writeToSession(activeTab.backendSessionId, text);
+        }).catch(err => console.error('Failed to paste:', err));
+      }
+      return;
+    }
   }
 
   function handleMouseDown(e: MouseEvent) {
@@ -197,7 +256,7 @@
         </div>
 
         <!-- Session Tree -->
-        <div class="flex-1 overflow-y-auto">
+        <div class="flex-1 overflow-hidden">
           <SessionTree />
         </div>
       </div>

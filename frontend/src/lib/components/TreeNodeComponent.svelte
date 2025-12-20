@@ -3,6 +3,7 @@
   import { createEventDispatcher } from 'svelte';
   import ContextMenu, { type MenuItem } from './ContextMenu.svelte';
   import EditSessionDialog from './EditSessionDialog.svelte';
+  import NewSessionDialog from './NewSessionDialog.svelte';
   import { sessionsStore } from '../stores/sessions.svelte';
   import * as LoggingService from '$bindings/term/loggingservice';
 
@@ -26,6 +27,8 @@
   let isDragOver = $state(false);
   let dragOverPosition = $state<'before' | 'inside' | 'after' | null>(null);
   let showEditDialog = $state(false);
+  let showNewSubfolderDialog = $state(false);
+  let showNewSessionDialog = $state(false);
   let hasMoved = $state(false);
   let dragStartX = $state(0);
   let dragStartY = $state(0);
@@ -142,6 +145,25 @@
         }
       }
     ];
+
+    if (node.session.type === 'folder') {
+      items.push(
+        {
+          label: 'New Session',
+          icon: '💻',
+          action: () => {
+            showNewSessionDialog = true;
+          }
+        },
+        {
+          label: 'New Subfolder',
+          icon: '📁',
+          action: () => {
+            showNewSubfolderDialog = true;
+          }
+        }
+      );
+    }
 
     if (node.session.type === 'session') {
       items.push({
@@ -421,6 +443,20 @@
   show={showEditDialog}
   session={node.session}
   onClose={() => showEditDialog = false}
+/>
+
+<NewSessionDialog
+  show={showNewSubfolderDialog}
+  onClose={() => showNewSubfolderDialog = false}
+  defaultType="folder"
+  defaultParentId={node.session.id}
+/>
+
+<NewSessionDialog
+  show={showNewSessionDialog}
+  onClose={() => showNewSessionDialog = false}
+  defaultType="session"
+  defaultParentId={node.session.id}
 />
 
 <style>

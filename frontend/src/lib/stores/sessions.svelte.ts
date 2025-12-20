@@ -70,6 +70,15 @@ class SessionsStore {
     }
   }
 
+  async getSessionConfig(sessionId: string): Promise<Record<string, string>> {
+    try {
+      return await SessionService.GetSessionConfig(sessionId);
+    } catch (error) {
+      console.error('Failed to get session config:', error);
+      return {};
+    }
+  }
+
   selectNode(id: string | null) {
     this.selectedNodeId = id;
   }

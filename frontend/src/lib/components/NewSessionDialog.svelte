@@ -4,14 +4,32 @@
   interface Props {
     show: boolean;
     onClose: () => void;
+    defaultType?: 'folder' | 'session';
+    defaultParentId?: string;
   }
 
-  let { show, onClose }: Props = $props();
+  let { show, onClose, defaultType, defaultParentId }: Props = $props();
 
-  let itemType = $state<'folder' | 'session'>('session');
+  let itemType = $state<'folder' | 'session'>(defaultType || 'session');
   let sessionName = $state('');
   let sessionType = $state<'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh'>('bash');
-  let parentId = $state<string | null>(null);
+  let parentId = $state<string | null>(defaultParentId || null);
+
+  // Reset when dialog opens
+  $effect(() => {
+    if (show) {
+      itemType = defaultType || 'session';
+      parentId = defaultParentId || null;
+      sessionName = '';
+      sessionType = 'bash';
+      sshHost = '';
+      sshPort = '22';
+      sshUsername = '';
+      sshAuthMethod = 'password';
+      sshPassword = '';
+      sshKeyPath = '';
+    }
+  });
 
   // SSH-specific fields
   let sshHost = $state('');
@@ -26,18 +44,11 @@
       return;
     }
 
-    // Validate SSH fields
+    // Basic validation for SSH - only host is truly required
+    // (username, auth, etc. can be inherited from parent folder)
     if (itemType === 'session' && sessionType === 'ssh') {
-      if (!sshHost.trim() || !sshUsername.trim()) {
-        alert('SSH host and username are required');
-        return;
-      }
-      if (sshAuthMethod === 'password' && !sshPassword) {
-        alert('SSH password is required');
-        return;
-      }
-      if (sshAuthMethod === 'key' && !sshKeyPath.trim()) {
-        alert('SSH key path is required');
+      if (!sshHost.trim()) {
+        alert('SSH host is required (other fields can be inherited from folder)');
         return;
       }
     }
@@ -56,17 +67,30 @@
 
       await sessionsStore.createSession(newItem);
 
-      // Save SSH config if SSH session
+      // Save SSH config if SSH session (only save non-empty values)
       if (itemType === 'session' && sessionType === 'ssh') {
         const sessionId = newItem.id;
-        await sessionsStore.setSessionConfig(sessionId, 'ssh_host', sshHost.toString());
-        await sessionsStore.setSessionConfig(sessionId, 'ssh_port', sshPort.toString());
-        await sessionsStore.setSessionConfig(sessionId, 'ssh_username', sshUsername.toString());
+
+        // Host is required
+        if (sshHost.trim()) {
+          await sessionsStore.setSessionConfig(sessionId, 'ssh_host', sshHost.toString());
+        }
+
+        // Optional fields (can be inherited from parent folder)
+        if (sshPort.trim() && sshPort !== '22') {
+          await sessionsStore.setSessionConfig(sessionId, 'ssh_port', sshPort.toString());
+        }
+        if (sshUsername.trim()) {
+          await sessionsStore.setSessionConfig(sessionId, 'ssh_username', sshUsername.toString());
+        }
+
+        // Save auth method (always, since it's a user choice)
         await sessionsStore.setSessionConfig(sessionId, 'ssh_auth_method', sshAuthMethod.toString());
 
-        if (sshAuthMethod === 'password') {
+        // Save credentials only if provided
+        if (sshAuthMethod === 'password' && sshPassword.trim()) {
           await sessionsStore.setSessionConfig(sessionId, 'ssh_password', sshPassword.toString());
-        } else {
+        } else if (sshAuthMethod === 'key' && sshKeyPath.trim()) {
           await sessionsStore.setSessionConfig(sessionId, 'ssh_key_path', sshKeyPath.toString());
         }
       }
@@ -157,7 +181,10 @@
 
           {#if sessionType === 'ssh'}
             <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
-              <h4 class="text-sm font-medium text-blue-400">SSH Connection</h4>
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-medium text-blue-400">SSH Connection</h4>
+                <p class="text-xs text-gray-400">* Only host is required</p>
+              </div>
 
               <div class="grid grid-cols-2 gap-3">
                 <div class="col-span-2">
@@ -181,7 +208,7 @@
                 </div>
 
                 <div>
-                  <label class="block text-xs font-medium mb-1">Username *</label>
+                  <label class="block text-xs font-medium mb-1">Username</label>
                   <input
                     type="text"
                     bind:value={sshUsername}
@@ -204,7 +231,7 @@
 
               {#if sshAuthMethod === 'password'}
                 <div>
-                  <label class="block text-xs font-medium mb-1">Password *</label>
+                  <label class="block text-xs font-medium mb-1">Password</label>
                   <input
                     type="password"
                     bind:value={sshPassword}
@@ -214,7 +241,7 @@
                 </div>
               {:else}
                 <div>
-                  <label class="block text-xs font-medium mb-1">Key Path *</label>
+                  <label class="block text-xs font-medium mb-1">Key Path</label>
                   <input
                     type="text"
                     bind:value={sshKeyPath}
@@ -224,6 +251,10 @@
                   <p class="text-xs text-gray-500 mt-1">Path to your private key file</p>
                 </div>
               {/if}
+
+              <p class="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-600">
+                💡 Tip: Leave fields empty to inherit values from the parent folder
+              </p>
             </div>
           {/if}
         {/if}
