@@ -129,6 +129,35 @@ jobs:
         with:
           path: artifacts
 
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+
+          # Copy and rename artifacts to include platform info
+          # Linux
+          if [ -f artifacts/linux-amd64/term ]; then
+            cp artifacts/linux-amd64/term release-assets/term-linux-amd64
+          fi
+          if [ -f artifacts/linux-amd64/term.tar.gz ]; then
+            cp artifacts/linux-amd64/term.tar.gz release-assets/term-linux-amd64.tar.gz
+          fi
+
+          # Windows
+          if [ -f artifacts/windows-amd64/term.exe ]; then
+            cp artifacts/windows-amd64/term.exe release-assets/term-windows-amd64.exe
+          fi
+          if [ -f artifacts/windows-amd64/term.exe.zip ]; then
+            cp artifacts/windows-amd64/term.exe.zip release-assets/term-windows-amd64.zip
+          fi
+
+          # macOS
+          if [ -f artifacts/darwin-arm64/term ]; then
+            cp artifacts/darwin-arm64/term release-assets/term-darwin-arm64
+          fi
+          if [ -f artifacts/darwin-arm64/term.zip ]; then
+            cp artifacts/darwin-arm64/term.zip release-assets/term-darwin-arm64.zip
+          fi
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -144,14 +173,14 @@ jobs:
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists, creating release for existing tag"
             gh release create "$TAG" \
-              artifacts/**/* \
+              release-assets/* \
               --title "$TITLE" \
               ${{ github.event.inputs.prerelease && '--prerelease' || '' }} \
               --generate-notes
           else
             echo "Tag $TAG does not exist, creating new tag and release"
             gh release create "$TAG" \
-              artifacts/**/* \
+              release-assets/* \
               --title "$TITLE" \
               --target "${{ github.sha }}" \
               ${{ github.event.inputs.prerelease && '--prerelease' || '' }} \
