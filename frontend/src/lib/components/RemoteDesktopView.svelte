@@ -171,24 +171,33 @@
       mouse = new Guacamole.Mouse(display.getElement());
 
       mouse.onmousedown = (mouseState: any) => {
-        // Scale mouse coordinates to match display scale
-        mouseState.x = mouseState.x / currentScale;
-        mouseState.y = mouseState.y / currentScale;
-        client.sendMouseState(mouseState);
+        // Create a scaled copy of mouse state to avoid modifying the original
+        const scaledState = {
+          ...mouseState,
+          x: mouseState.x / currentScale,
+          y: mouseState.y / currentScale
+        };
+        client.sendMouseState(scaledState);
       };
 
       mouse.onmouseup = (mouseState: any) => {
-        // Scale mouse coordinates to match display scale
-        mouseState.x = mouseState.x / currentScale;
-        mouseState.y = mouseState.y / currentScale;
-        client.sendMouseState(mouseState);
+        // Create a scaled copy of mouse state to avoid modifying the original
+        const scaledState = {
+          ...mouseState,
+          x: mouseState.x / currentScale,
+          y: mouseState.y / currentScale
+        };
+        client.sendMouseState(scaledState);
       };
 
       mouse.onmousemove = (mouseState: any) => {
-        // Scale mouse coordinates to match display scale
-        mouseState.x = mouseState.x / currentScale;
-        mouseState.y = mouseState.y / currentScale;
-        client.sendMouseState(mouseState);
+        // Create a scaled copy of mouse state to avoid modifying the original
+        const scaledState = {
+          ...mouseState,
+          x: mouseState.x / currentScale,
+          y: mouseState.y / currentScale
+        };
+        client.sendMouseState(scaledState);
       };
 
       // Keyboard handling
