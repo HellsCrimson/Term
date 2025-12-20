@@ -7,6 +7,18 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as ssh$0 from "../golang.org/x/crypto/ssh/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as io$0 from "../io/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as os$0 from "../os/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as exec$0 from "../os/exec/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as database$0 from "./database/models.js";
 
 /**
@@ -125,6 +137,75 @@ export class SystemStats {
     }
 }
 
+export class TerminalSession {
+    "ID": string;
+    "PTY": os$0.File | null;
+    "Cmd": exec$0.Cmd | null;
+    "Running": boolean;
+
+    /**
+     * SSH-specific fields
+     */
+    "SSHClient": ssh$0.Client | null;
+    "SSHSession": ssh$0.Session | null;
+    "SSHStdin": io$0.WriteCloser;
+    "IsSSH": boolean;
+
+    /** Creates a new TerminalSession instance. */
+    constructor($$source: Partial<TerminalSession> = {}) {
+        if (!("ID" in $$source)) {
+            this["ID"] = "";
+        }
+        if (!("PTY" in $$source)) {
+            this["PTY"] = null;
+        }
+        if (!("Cmd" in $$source)) {
+            this["Cmd"] = null;
+        }
+        if (!("Running" in $$source)) {
+            this["Running"] = false;
+        }
+        if (!("SSHClient" in $$source)) {
+            this["SSHClient"] = null;
+        }
+        if (!("SSHSession" in $$source)) {
+            this["SSHSession"] = null;
+        }
+        if (!("SSHStdin" in $$source)) {
+            this["SSHStdin"] = null;
+        }
+        if (!("IsSSH" in $$source)) {
+            this["IsSSH"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new TerminalSession instance from a string or object.
+     */
+    static createFrom($$source: any = {}): TerminalSession {
+        const $$createField1_0 = $$createType2;
+        const $$createField2_0 = $$createType4;
+        const $$createField4_0 = $$createType6;
+        const $$createField5_0 = $$createType8;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("PTY" in $$parsedSource) {
+            $$parsedSource["PTY"] = $$createField1_0($$parsedSource["PTY"]);
+        }
+        if ("Cmd" in $$parsedSource) {
+            $$parsedSource["Cmd"] = $$createField2_0($$parsedSource["Cmd"]);
+        }
+        if ("SSHClient" in $$parsedSource) {
+            $$parsedSource["SSHClient"] = $$createField4_0($$parsedSource["SSHClient"]);
+        }
+        if ("SSHSession" in $$parsedSource) {
+            $$parsedSource["SSHSession"] = $$createField5_0($$parsedSource["SSHSession"]);
+        }
+        return new TerminalSession($$parsedSource as Partial<TerminalSession>);
+    }
+}
+
 /**
  * TreeNode represents a node in the hierarchical session tree
  */
@@ -148,8 +229,8 @@ export class TreeNode {
      * Creates a new TreeNode instance from a string or object.
      */
     static createFrom($$source: any = {}): TreeNode {
-        const $$createField0_0 = $$createType1;
-        const $$createField1_0 = $$createType3;
+        const $$createField0_0 = $$createType9;
+        const $$createField1_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("session" in $$parsedSource) {
             $$parsedSource["session"] = $$createField0_0($$parsedSource["session"]);
@@ -163,6 +244,14 @@ export class TreeNode {
 
 // Private type creation functions
 const $$createType0 = $Create.Map($Create.Any, $Create.Any);
-const $$createType1 = database$0.SessionNode.createFrom;
-const $$createType2 = TreeNode.createFrom;
-const $$createType3 = $Create.Array($$createType2);
+const $$createType1 = os$0.File.createFrom;
+const $$createType2 = $Create.Nullable($$createType1);
+const $$createType3 = exec$0.Cmd.createFrom;
+const $$createType4 = $Create.Nullable($$createType3);
+const $$createType5 = ssh$0.Client.createFrom;
+const $$createType6 = $Create.Nullable($$createType5);
+const $$createType7 = ssh$0.Session.createFrom;
+const $$createType8 = $Create.Nullable($$createType7);
+const $$createType9 = database$0.SessionNode.createFrom;
+const $$createType10 = TreeNode.createFrom;
+const $$createType11 = $Create.Array($$createType10);

@@ -1,5 +1,7 @@
 import type { Terminal } from 'ghostty-web';
 import * as TerminalService from '$bindings/term/terminalservice';
+import * as RemoteStatsService from '$bindings/term/remotestatsservice';
+import * as SystemStatsService from '$bindings/term/systemstatsservice';
 import { Events } from '@wailsio/runtime';
 import { settingsStore } from './settings.svelte';
 import * as LoggingService from '$bindings/term/loggingservice';
@@ -66,6 +68,14 @@ class TerminalsStore {
       tab.active = tab.id === id;
     });
     this.activeTabId = id;
+
+    // Notify both stats services about the active session
+    const activeTab = this.tabs.find(tab => tab.id === id);
+    if (activeTab) {
+      const sessionId = activeTab.backendSessionId;
+      RemoteStatsService.SetActiveSession(sessionId);
+      SystemStatsService.SetActiveSession(sessionId);
+    }
   }
 
   getActiveTab(): TerminalTab | null {
@@ -134,6 +144,9 @@ class TerminalsStore {
       this.setActiveTab(this.tabs[0].id);
     } else if (this.tabs.length === 0) {
       this.activeTabId = null;
+      // Clear stats services when no tabs are open
+      RemoteStatsService.SetActiveSession("");
+      SystemStatsService.SetActiveSession("");
     }
 
     LoggingService.Log(`Tab closed successfully, ${this.tabs.length} tabs remaining`, "INFO");

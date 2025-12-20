@@ -26,6 +26,15 @@ export function GetActiveSessions(): $CancellablePromise<string[]> {
 }
 
 /**
+ * GetSession returns a terminal session by ID
+ */
+export function GetSession(id: string): $CancellablePromise<$models.TerminalSession | null> {
+    return $Call.ByID(1764697881, id).then(($result: any) => {
+        return $$createType2($result);
+    });
+}
+
+/**
  * IsSessionRunning checks if a session is still running
  */
 export function IsSessionRunning(id: string): $CancellablePromise<boolean> {
@@ -55,3 +64,5 @@ export function WriteToSession(id: string, data: string): $CancellablePromise<vo
 
 // Private type creation functions
 const $$createType0 = $Create.Array($Create.Any);
+const $$createType1 = $models.TerminalSession.createFrom;
+const $$createType2 = $Create.Nullable($$createType1);

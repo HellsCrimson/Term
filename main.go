@@ -66,11 +66,17 @@ func main() {
 	terminalService := NewTerminalService(app)
 	app.RegisterService(application.NewService(terminalService))
 
-	// Create and start system stats service
-	systemStatsService := NewSystemStatsService()
+	// Create and start system stats service (needs terminal service to check session types)
+	systemStatsService := NewSystemStatsService(terminalService)
 	systemStatsService.SetApp(app)
 	app.RegisterService(application.NewService(systemStatsService))
 	systemStatsService.Start()
+
+	// Create and start remote stats service (for monitoring SSH remote machines)
+	remoteStatsService := NewRemoteStatsService(terminalService)
+	remoteStatsService.SetApp(app)
+	app.RegisterService(application.NewService(remoteStatsService))
+	remoteStatsService.Start()
 
 	// Create Guacamole service and HTTP server
 	guacService := NewGuacamoleService(sessionService)

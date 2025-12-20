@@ -2,7 +2,6 @@
   import { onMount, onDestroy } from 'svelte';
   import Guacamole from 'guacamole-common-js';
   import type { TerminalTab } from '../stores/terminals.svelte';
-  import { terminalsStore } from '../stores/terminals.svelte';
   import { sessionsStore } from '../stores/sessions.svelte';
   import { LoggingService } from '$bindings/term';
   import StatusBar from './StatusBar.svelte';
@@ -14,7 +13,7 @@
   let { tab }: Props = $props();
 
   let displayElement: HTMLDivElement;
-  let client: any = null;
+  let client: Guacamole.Client | null = null;
   let resizeObserver: ResizeObserver | null = null;
   let lastContainerWidth = 0;
   let lastContainerHeight = 0;
@@ -25,7 +24,7 @@
   // Focus desktop when tab becomes active
   $effect(() => {
     if (tab.active && client) {
-      client.focus();
+      client?.getDisplay().getElement().focus();
     }
   });
 
@@ -65,11 +64,16 @@
 
       // Error handler
       client.onerror = (error: any) => {
-        LoggingService.Log(`Guacamole client error: ${error.message || error}`, "ERROR");
+        const errorMessage = error.message || 'Unknown error';
+        LoggingService.Log(`Guacamole client error: ${errorMessage}`, "ERROR");
         if (displayElement) {
           const errorDiv = document.createElement('div');
-          errorDiv.className = 'flex items-center justify-center h-full text-red-400';
-          errorDiv.textContent = `Connection error: ${error.message || 'Unknown error'}`;
+          errorDiv.className = 'flex flex-col items-center justify-center h-full p-8 text-center';
+          errorDiv.innerHTML = `
+            <div class="text-red-400 text-6xl mb-4">⚠️</div>
+            <div class="text-red-400 text-xl font-bold mb-2">Remote Desktop Connection Failed</div>
+            <div class="text-gray-300 text-sm max-w-md">${errorMessage}</div>
+          `;
           displayElement.innerHTML = '';
           displayElement.appendChild(errorDiv);
         }
@@ -177,7 +181,7 @@
           x: mouseState.x / currentScale,
           y: mouseState.y / currentScale
         };
-        client.sendMouseState(scaledState);
+        client?.sendMouseState(scaledState);
       };
 
       mouse.onmouseup = (mouseState: any) => {
@@ -187,7 +191,7 @@
           x: mouseState.x / currentScale,
           y: mouseState.y / currentScale
         };
-        client.sendMouseState(scaledState);
+        client?.sendMouseState(scaledState);
       };
 
       mouse.onmousemove = (mouseState: any) => {
@@ -197,18 +201,18 @@
           x: mouseState.x / currentScale,
           y: mouseState.y / currentScale
         };
-        client.sendMouseState(scaledState);
+        client?.sendMouseState(scaledState);
       };
 
       // Keyboard handling
       const keyboard = new Guacamole.Keyboard(document);
 
       keyboard.onkeydown = (keysym: number) => {
-        client.sendKeyEvent(1, keysym);
+        client?.sendKeyEvent(1, keysym);
       };
 
       keyboard.onkeyup = (keysym: number) => {
-        client.sendKeyEvent(0, keysym);
+        client?.sendKeyEvent(0, keysym);
       };
 
       // Set up resize observer to scale display
@@ -223,8 +227,12 @@
       LoggingService.Log(`Failed to create Guacamole client: ${error}`, "ERROR");
       if (displayElement) {
         const errorDiv = document.createElement('div');
-        errorDiv.className = 'flex items-center justify-center h-full text-red-400';
-        errorDiv.textContent = `Failed to initialize: ${error}`;
+        errorDiv.className = 'flex flex-col items-center justify-center h-full p-8 text-center';
+        errorDiv.innerHTML = `
+          <div class="text-red-400 text-6xl mb-4">⚠️</div>
+          <div class="text-red-400 text-xl font-bold mb-2">Failed to Initialize Remote Desktop</div>
+          <div class="text-gray-300 text-sm max-w-md">${error}</div>
+        `;
         displayElement.appendChild(errorDiv);
       }
     }

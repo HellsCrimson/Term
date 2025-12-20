@@ -31,22 +31,30 @@ type SystemStats struct {
 // SystemStatsService provides system resource monitoring
 type SystemStatsService struct {
 	app             *application.App
+	terminalService *TerminalService
 	ctx             context.Context
 	cancel          context.CancelFunc
 	updateInterval  time.Duration
 	lastNetworkStat *net.IOCountersStat
+	activeSessionID string
 }
 
 // NewSystemStatsService creates a new system stats service
-func NewSystemStatsService() *SystemStatsService {
+func NewSystemStatsService(terminalService *TerminalService) *SystemStatsService {
 	return &SystemStatsService{
-		updateInterval: 2 * time.Second, // Update every 2 seconds
+		terminalService: terminalService,
+		updateInterval:  2 * time.Second, // Update every 2 seconds
 	}
 }
 
 // SetApp sets the Wails application instance
 func (s *SystemStatsService) SetApp(app *application.App) {
 	s.app = app
+}
+
+// SetActiveSession sets which session is currently active
+func (s *SystemStatsService) SetActiveSession(sessionID string) {
+	s.activeSessionID = sessionID
 }
 
 // Start begins collecting and emitting system stats
@@ -73,9 +81,21 @@ func (s *SystemStatsService) collectStats() {
 		case <-s.ctx.Done():
 			return
 		case <-ticker.C:
-			stats := s.getSystemStats()
-			if s.app != nil {
-				s.app.Event.Emit("system:stats", stats)
+			// Only emit local stats if the active session is not SSH
+			// (remote stats service handles SSH sessions)
+			shouldEmit := true
+			if s.activeSessionID != "" && s.terminalService != nil {
+				session := s.terminalService.GetSession(s.activeSessionID)
+				if session != nil && session.IsSSH {
+					shouldEmit = false
+				}
+			}
+
+			if shouldEmit {
+				stats := s.getSystemStats()
+				if s.app != nil {
+					s.app.Event.Emit("system:stats", stats)
+				}
 			}
 		}
 	}

@@ -662,3 +662,10 @@ func (t *TerminalService) GetActiveSessions() []string {
 	}
 	return ids
 }
+
+// GetSession returns a terminal session by ID
+func (t *TerminalService) GetSession(id string) *TerminalSession {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.sessions[id]
+}

@@ -86,7 +86,9 @@ func (g *GuacamoleService) HandleWebSocket(w http.ResponseWriter, r *http.Reques
 	conn, err := net.DialTimeout("tcp", guacAddr, 10*time.Second)
 	if err != nil {
 		log.Printf("Failed to connect to guacd: %v", err)
-		wsConn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("4.error,25.Failed to connect to guacd,3.500;")))
+		// Send user-friendly error message
+		errorMsg := fmt.Sprintf("4.error,94.guacd is not running. Please start guacd (Apache Guacamole proxy daemon) on %s:%s,3.503;", guacdHost, guacdPort)
+		wsConn.WriteMessage(websocket.TextMessage, []byte(errorMsg))
 		return
 	}
 	defer conn.Close()
@@ -190,22 +192,22 @@ func (g *GuacamoleService) buildGuacConfig(sessionType string, config map[string
 	case "rdp":
 		guacConfig.Protocol = "rdp"
 		guacConfig.Parameters = map[string]string{
-			"hostname":                  config["rdp_host"],
-			"port":                      g.getOrDefault(config, "rdp_port", "3389"),
-			"username":                  config["rdp_username"],
-			"password":                  config["rdp_password"],
-			"domain":                    config["rdp_domain"],
-			"security":                  g.getOrDefault(config, "rdp_security", "any"),
-			"ignore-cert":               "true",
-			"width":                     g.getOrDefault(config, "desktop_width", "1920"),
-			"height":                    g.getOrDefault(config, "desktop_height", "1080"),
-			"color-depth":               g.getOrDefault(config, "desktop_color_depth", "16"),
-			"enable-wallpaper":          "false",
-			"enable-theming":            "false",
-			"enable-font-smoothing":     "false",
-			"enable-full-window-drag":   "false",
+			"hostname":                   config["rdp_host"],
+			"port":                       g.getOrDefault(config, "rdp_port", "3389"),
+			"username":                   config["rdp_username"],
+			"password":                   config["rdp_password"],
+			"domain":                     config["rdp_domain"],
+			"security":                   g.getOrDefault(config, "rdp_security", "any"),
+			"ignore-cert":                "true",
+			"width":                      g.getOrDefault(config, "desktop_width", "1920"),
+			"height":                     g.getOrDefault(config, "desktop_height", "1080"),
+			"color-depth":                g.getOrDefault(config, "desktop_color_depth", "16"),
+			"enable-wallpaper":           "false",
+			"enable-theming":             "false",
+			"enable-font-smoothing":      "false",
+			"enable-full-window-drag":    "false",
 			"enable-desktop-composition": "false",
-			"enable-menu-animations":    "false",
+			"enable-menu-animations":     "false",
 		}
 
 	case "vnc":
@@ -242,4 +244,3 @@ func (g *GuacamoleService) getOrDefault(config map[string]string, key, defaultVa
 	}
 	return defaultValue
 }
-
