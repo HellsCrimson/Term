@@ -45,7 +45,7 @@
           );
 
           // Force a terminal refresh to redraw content
-          terminal.refresh(0, terminal.rows - 1);
+          // terminal.refresh(0, terminal.rows - 1);
         }
       }, 0);
     }
@@ -195,6 +195,6 @@
 </script>
 
 <div class="terminal-wrapper h-full bg-[#1a1b26] flex flex-col">
-  <div class="terminal-container flex-1 p-4" bind:this={terminalElement}></div>
+  <div class="terminal-container flex-1 bg-transparent" bind:this={terminalElement}></div>
   <StatusBar />
 </div>

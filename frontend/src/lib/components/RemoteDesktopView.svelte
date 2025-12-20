@@ -108,11 +108,11 @@
       // Mouse handling
       const mouse = new Guacamole.Mouse(display.getElement());
 
-      mouse.onmousedown =
-      mouse.onmouseup =
-      mouse.onmousemove = (mouseState: any) => {
-        client.sendMouseState(mouseState);
-      };
+      // mouse.onmousedown =
+      // mouse.onmouseup =
+      // mouse.onmousemove = (mouseState: any) => {
+      //   client.sendMouseState(mouseState);
+      // };
 
       // Keyboard handling
       const keyboard = new Guacamole.Keyboard(document);
