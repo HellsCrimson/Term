@@ -20,6 +20,9 @@ func init() {
 	application.RegisterEvent[map[string]interface{}]("terminal:data")
 	application.RegisterEvent[map[string]interface{}]("terminal:exit")
 	application.RegisterEvent[map[string]interface{}]("terminal:error")
+
+	// Register system stats event
+	application.RegisterEvent[SystemStats]("system:stats")
 }
 
 func main() {
@@ -62,6 +65,12 @@ func main() {
 	// Create terminal service (needs app instance for events)
 	terminalService := NewTerminalService(app)
 	app.RegisterService(application.NewService(terminalService))
+
+	// Create and start system stats service
+	systemStatsService := NewSystemStatsService()
+	systemStatsService.SetApp(app)
+	app.RegisterService(application.NewService(systemStatsService))
+	systemStatsService.Start()
 
 	// Create main window
 	app.Window.NewWithOptions(application.WebviewWindowOptions{

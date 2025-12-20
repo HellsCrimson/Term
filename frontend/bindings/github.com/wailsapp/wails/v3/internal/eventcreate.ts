@@ -6,15 +6,21 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as main$0 from "../../../../../term/models.js";
+
 function configure() {
     Object.freeze(Object.assign($Create.Events, {
-        "terminal:data": $$createType0,
-        "terminal:error": $$createType0,
-        "terminal:exit": $$createType0,
+        "system:stats": $$createType0,
+        "terminal:data": $$createType1,
+        "terminal:error": $$createType1,
+        "terminal:exit": $$createType1,
     }));
 }
 
 // Private type creation functions
-const $$createType0 = $Create.Map($Create.Any, $Create.Any);
+const $$createType0 = main$0.SystemStats.createFrom;
+const $$createType1 = $Create.Map($Create.Any, $Create.Any);
 
 configure();

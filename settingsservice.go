@@ -146,3 +146,17 @@ func (s *SettingsService) SetConfirmTabClose(confirm string) error {
 	fmt.Printf("BACKEND SetConfirmTabClose saved successfully\n")
 	return nil
 }
+
+// GetShowStatusBar retrieves the show status bar setting
+func (s *SettingsService) GetShowStatusBar() (string, error) {
+	setting, err := s.db.GetSetting("show_status_bar")
+	if err != nil {
+		return "true", nil // default to true
+	}
+	return setting.Value, nil
+}
+
+// SetShowStatusBar updates the show status bar setting
+func (s *SettingsService) SetShowStatusBar(show string) error {
+	return s.db.SetSetting("show_status_bar", show, "bool")
+}

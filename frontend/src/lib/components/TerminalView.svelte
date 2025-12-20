@@ -5,6 +5,7 @@
   import { terminalsStore } from '../stores/terminals.svelte';
   import { sessionsStore } from '../stores/sessions.svelte';
   import { settingsStore } from '../stores/settings.svelte';
+  import StatusBar from './StatusBar.svelte';
 
   interface Props {
     tab: TerminalTab;
@@ -193,6 +194,7 @@
   });
 </script>
 
-<div class="terminal-wrapper h-full bg-[#1a1b26] p-4">
-  <div class="terminal-container h-full" bind:this={terminalElement}></div>
+<div class="terminal-wrapper h-full bg-[#1a1b26] flex flex-col">
+  <div class="terminal-container flex-1 p-4" bind:this={terminalElement}></div>
+  <StatusBar />
 </div>

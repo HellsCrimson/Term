@@ -8,6 +8,7 @@ export interface AppSettings {
   autoLaunch: boolean;
   restoreTabsOnStartup: boolean;
   confirmTabClose: boolean;
+  showStatusBar: boolean;
 }
 
 class SettingsStore {
@@ -17,7 +18,8 @@ class SettingsStore {
     fontSize: 14,
     autoLaunch: true,
     restoreTabsOnStartup: true,
-    confirmTabClose: false
+    confirmTabClose: false,
+    showStatusBar: true
   });
   loading = $state(false);
 
@@ -34,7 +36,8 @@ class SettingsStore {
         fontSize: parseInt(allSettings.font_size || '14'),
         autoLaunch: allSettings.auto_launch === 'true',
         restoreTabsOnStartup: (allSettings.restore_tabs_on_startup || 'true') === 'true',
-        confirmTabClose: (allSettings.confirm_tab_close || 'false') === 'true'
+        confirmTabClose: (allSettings.confirm_tab_close || 'false') === 'true',
+        showStatusBar: (allSettings.show_status_bar || 'true') === 'true'
       };
 
       console.log('Parsed settings:', this.settings);
@@ -102,6 +105,16 @@ class SettingsStore {
       console.log(`confirmTabClose saved successfully`);
     } catch (error) {
       console.error('Failed to set confirm tab close:', error);
+      throw error;
+    }
+  }
+
+  async setShowStatusBar(show: boolean) {
+    try {
+      await SettingsService.SetShowStatusBar(show.toString());
+      this.settings.showStatusBar = show;
+    } catch (error) {
+      console.error('Failed to set show status bar:', error);
       throw error;
     }
   }

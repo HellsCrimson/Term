@@ -4,15 +4,18 @@
 import * as LoggingService from "./loggingservice.js";
 import * as SessionService from "./sessionservice.js";
 import * as SettingsService from "./settingsservice.js";
+import * as SystemStatsService from "./systemstatsservice.js";
 import * as TerminalService from "./terminalservice.js";
 export {
     LoggingService,
     SessionService,
     SettingsService,
+    SystemStatsService,
     TerminalService
 };
 
 export {
     StartSessionRequest,
+    SystemStats,
     TreeNode
 } from "./models.js";

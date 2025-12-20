@@ -5,9 +5,14 @@
 // @ts-ignore: Unused imports
 import type { Events } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import type * as main$0 from "../../../../../term/models.js";
+
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
+            "system:stats": main$0.SystemStats;
             "terminal:data": { [_: string]: any };
             "terminal:error": { [_: string]: any };
             "terminal:exit": { [_: string]: any };

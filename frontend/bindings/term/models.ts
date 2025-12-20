@@ -58,6 +58,74 @@ export class StartSessionRequest {
 }
 
 /**
+ * SystemStats represents current system resource usage
+ */
+export class SystemStats {
+    "cpuPercent": number;
+    "memoryPercent": number;
+    "memoryUsed": number;
+    "memoryTotal": number;
+    "diskPercent": number;
+    "diskUsed": number;
+    "diskTotal": number;
+    "networkSent": number;
+    "networkRecv": number;
+    "loadAvg1": number;
+    "loadAvg5": number;
+    "loadAvg15": number;
+
+    /** Creates a new SystemStats instance. */
+    constructor($$source: Partial<SystemStats> = {}) {
+        if (!("cpuPercent" in $$source)) {
+            this["cpuPercent"] = 0;
+        }
+        if (!("memoryPercent" in $$source)) {
+            this["memoryPercent"] = 0;
+        }
+        if (!("memoryUsed" in $$source)) {
+            this["memoryUsed"] = 0;
+        }
+        if (!("memoryTotal" in $$source)) {
+            this["memoryTotal"] = 0;
+        }
+        if (!("diskPercent" in $$source)) {
+            this["diskPercent"] = 0;
+        }
+        if (!("diskUsed" in $$source)) {
+            this["diskUsed"] = 0;
+        }
+        if (!("diskTotal" in $$source)) {
+            this["diskTotal"] = 0;
+        }
+        if (!("networkSent" in $$source)) {
+            this["networkSent"] = 0;
+        }
+        if (!("networkRecv" in $$source)) {
+            this["networkRecv"] = 0;
+        }
+        if (!("loadAvg1" in $$source)) {
+            this["loadAvg1"] = 0;
+        }
+        if (!("loadAvg5" in $$source)) {
+            this["loadAvg5"] = 0;
+        }
+        if (!("loadAvg15" in $$source)) {
+            this["loadAvg15"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SystemStats instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SystemStats {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new SystemStats($$parsedSource as Partial<SystemStats>);
+    }
+}
+
+/**
  * TreeNode represents a node in the hierarchical session tree
  */
 export class TreeNode {

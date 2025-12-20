@@ -13,7 +13,8 @@
     "@sveltejs/kit": "^2.18.0",
     "@wailsio/runtime": "latest",
     "flowbite": "^2.5.2",
-    "ghostty-web": "^0.4.0"
+    "ghostty-web": "^0.4.0",
+    "guacamole-common-js": "^1.5.0"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.6",

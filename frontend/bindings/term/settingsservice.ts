@@ -63,6 +63,13 @@ export function GetSetting(key: string): $CancellablePromise<database$0.Setting 
 }
 
 /**
+ * GetShowStatusBar retrieves the show status bar setting
+ */
+export function GetShowStatusBar(): $CancellablePromise<string> {
+    return $Call.ByID(4107335468);
+}
+
+/**
  * GetTabSnapshots retrieves the saved tab snapshots
  */
 export function GetTabSnapshots(): $CancellablePromise<string> {
@@ -123,6 +130,13 @@ export function SetRestoreTabsOnStartup(restore: string): $CancellablePromise<vo
  */
 export function SetSetting(key: string, value: string, valueType: string): $CancellablePromise<void> {
     return $Call.ByID(512149104, key, value, valueType);
+}
+
+/**
+ * SetShowStatusBar updates the show status bar setting
+ */
+export function SetShowStatusBar(show: string): $CancellablePromise<void> {
+    return $Call.ByID(1665745160, show);
 }
 
 /**

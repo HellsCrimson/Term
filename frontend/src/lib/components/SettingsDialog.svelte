@@ -15,6 +15,7 @@
   let autoLaunch = $state(settingsStore.settings.autoLaunch);
   let restoreTabsOnStartup = $state(settingsStore.settings.restoreTabsOnStartup);
   let confirmTabClose = $state(settingsStore.settings.confirmTabClose);
+  let showStatusBar = $state(settingsStore.settings.showStatusBar);
   let saving = $state(false);
 
   // Update local state when settings change (but not while saving)
@@ -26,6 +27,7 @@
       autoLaunch = settingsStore.settings.autoLaunch;
       restoreTabsOnStartup = settingsStore.settings.restoreTabsOnStartup;
       confirmTabClose = settingsStore.settings.confirmTabClose;
+      showStatusBar = settingsStore.settings.showStatusBar;
     }
   });
 
@@ -54,6 +56,9 @@
 
       await settingsStore.setConfirmTabClose(confirmTabClose);
       console.log('ConfirmTabClose saved');
+
+      await settingsStore.setShowStatusBar(showStatusBar);
+      console.log('ShowStatusBar saved');
 
       console.log('=== DIALOG handleSave END - calling onClose ===');
       onClose();
@@ -221,6 +226,25 @@
                 <input
                   type="checkbox"
                   bind:checked={confirmTabClose}
+                  class="sr-only peer"
+                />
+                <div
+                  class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
+                ></div>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium">Show status bar</label>
+                <p class="text-xs text-gray-400">
+                  Display system resource monitoring bar (CPU, RAM, Disk, Network)
+                </p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  bind:checked={showStatusBar}
                   class="sr-only peer"
                 />
                 <div

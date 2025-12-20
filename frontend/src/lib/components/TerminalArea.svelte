@@ -2,6 +2,7 @@
   import { terminalsStore } from '../stores/terminals.svelte';
   import TabBar from './TabBar.svelte';
   import TerminalView from './TerminalView.svelte';
+  import RemoteDesktopView from './RemoteDesktopView.svelte';
 
   const { tabs, activeTabId } = $derived.by(() => ({
     tabs: terminalsStore.tabs,
@@ -9,6 +10,10 @@
   }));
 
   const activeTab = $derived(terminalsStore.getActiveTab());
+
+  function isRemoteDesktopSession(sessionType: string): boolean {
+    return ['rdp', 'vnc', 'telnet'].includes(sessionType);
+  }
 </script>
 
 <div class="flex flex-col h-full bg-gray-900">
@@ -21,7 +26,11 @@
       {#each tabs as tab (tab.id)}
         <div class="absolute inset-0" style="display: {tab.active ? 'block' : 'none'}">
           {#key tab.id}
-            <TerminalView {tab} />
+            {#if isRemoteDesktopSession(tab.sessionType)}
+              <RemoteDesktopView {tab} />
+            {:else}
+              <TerminalView {tab} />
+            {/if}
           {/key}
         </div>
       {/each}
