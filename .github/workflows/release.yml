@@ -33,37 +33,34 @@ jobs:
             goarch: amd64
             cgo: 1
             out_name: term
-            # archive: tar.gz
+            archive: tar.gz
           - os: windows-latest
             goos: windows
             goarch: amd64
             cgo: 0
             out_name: term.exe
-            # archive: zip
+            archive: zip
           - os: macos-latest
             goos: darwin
             goarch: arm64
             cgo: 1
             out_name: term
-            # archive: zip
+            archive: zip
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: "1.24"
           cache: true
-      
+
       - name: Install Linux dependencies
         if: matrix.goos == 'linux'
         run: |
@@ -73,10 +70,13 @@ jobs:
             pkg-config \
             libgtk-3-dev \
             libwebkit2gtk-4.1-dev
-      
+
       - name: Install Wails CLI
-        run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+
+      - name: Windows install zip
+        if: matrix.goos == 'windows'
+        run: choco install zip -y
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -106,18 +106,14 @@ jobs:
           cd bin
           tar -czf ${{ matrix.out_name }}.tar.gz ${{ matrix.out_name }}
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.goos }}-${{ matrix.goarch }}
-          path: |
-            bin/${{ matrix.out_name }}
-            bin/${{ matrix.out_name }}.zip
-            bin/${{ matrix.out_name }}.tar.gz
-          if-no-files-found: warn
+          path: bin/*
+          if-no-files-found: error
 
   release:
-    name: Create Release
+    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -126,22 +122,27 @@ jobs:
         with:
           path: artifacts
 
-      - name: Generate file list
-        id: files
+      - name: Create Git tag if missing
         run: |
-          echo "files<<EOF" >> $GITHUB_OUTPUT
-          find artifacts -type f -maxdepth 2 -print >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          git fetch --tags
+          if ! git rev-parse "${{ github.event.inputs.tag }}" >/dev/null 2>&1; then
+            git tag "${{ github.event.inputs.tag }}"
+            git push origin "${{ github.event.inputs.tag }}"
+          fi
 
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.event.inputs.tag }}
-          name: ${{ github.event.inputs.name || github.event.inputs.tag }}
-          draft: false
-          prerelease: ${{ github.event.inputs.prerelease }}
-          files: |
-            ${{ steps.files.outputs.files }}
+      - name: Create GitHub Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="${{ github.event.inputs.name }}"
+          TAG="${{ github.event.inputs.tag }}"
 
+          if [ -z "$TITLE" ]; then
+            TITLE="$TAG"
+          fi
+
+          gh release create "$TAG" \
+            artifacts/**/* \
+            --title "$TITLE" \
+            ${{ github.event.inputs.prerelease && '--prerelease' || '' }} \
+            --generate-notes
