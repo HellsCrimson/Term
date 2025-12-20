@@ -24,6 +24,8 @@ jobs:
   build:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -116,6 +118,8 @@ jobs:
     name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -133,6 +137,7 @@ jobs:
           if ! git rev-parse "${{ github.event.inputs.tag }}" >/dev/null 2>&1; then
             git tag "${{ github.event.inputs.tag }}"
             git push origin "${{ github.event.inputs.tag }}"
+            sleep 5
           fi
 
       - name: Create GitHub Release
