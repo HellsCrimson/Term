@@ -28,6 +28,9 @@
       sshAuthMethod = 'password';
       sshPassword = '';
       sshKeyPath = '';
+      workingDirectory = '';
+      startupCommands = '';
+      environmentVariables = '';
     }
   });
 
@@ -38,6 +41,11 @@
   let sshAuthMethod = $state<'password' | 'key'>('password');
   let sshPassword = $state('');
   let sshKeyPath = $state('');
+
+  // General session fields
+  let workingDirectory = $state('');
+  let startupCommands = $state('');
+  let environmentVariables = $state('');
 
   async function handleCreate() {
     if (!sessionName.trim()) {
@@ -95,6 +103,21 @@
         }
       }
 
+      // Save general session config (for all session types)
+      if (itemType === 'session') {
+        const sessionId = newItem.id;
+
+        if (workingDirectory.trim()) {
+          await sessionsStore.setSessionConfig(sessionId, 'working_directory', workingDirectory.toString());
+        }
+        if (startupCommands.trim()) {
+          await sessionsStore.setSessionConfig(sessionId, 'startup_commands', startupCommands.toString());
+        }
+        if (environmentVariables.trim()) {
+          await sessionsStore.setSessionConfig(sessionId, 'environment_variables', environmentVariables.toString());
+        }
+      }
+
       resetForm();
       onClose();
     } catch (error) {
@@ -119,6 +142,9 @@
     sshAuthMethod = 'password';
     sshPassword = '';
     sshKeyPath = '';
+    workingDirectory = '';
+    startupCommands = '';
+    environmentVariables = '';
   }
 
   // Helper to check if we need setSessionConfig
@@ -257,6 +283,48 @@
               </p>
             </div>
           {/if}
+
+          <!-- General session configuration (for all session types) -->
+          <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+            <h4 class="text-sm font-medium text-purple-400">Session Configuration</h4>
+
+            <div>
+              <label class="block text-xs font-medium mb-1">Working Directory</label>
+              <input
+                type="text"
+                bind:value={workingDirectory}
+                class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                placeholder="~/projects or /home/user"
+              />
+              <p class="text-xs text-gray-500 mt-1">Directory where the session will start (supports ~)</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium mb-1">Startup Commands</label>
+              <textarea
+                bind:value={startupCommands}
+                rows="2"
+                class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
+                placeholder="cd ~/project; source .env"
+              ></textarea>
+              <p class="text-xs text-gray-500 mt-1">Commands to run when session starts (separated by semicolons)</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium mb-1">Environment Variables</label>
+              <textarea
+                bind:value={environmentVariables}
+                rows="2"
+                class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
+                placeholder="KEY1=value1; KEY2=value2"
+              ></textarea>
+              <p class="text-xs text-gray-500 mt-1">Environment variables (KEY=value; separated by semicolons)</p>
+            </div>
+
+            <p class="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-600">
+              💡 Tip: Leave fields empty to inherit values from the parent folder
+            </p>
+          </div>
         {/if}
       </div>
 

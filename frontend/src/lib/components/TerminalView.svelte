@@ -51,6 +51,34 @@
   });
 
   onMount(async () => {
+    // Clear any existing content in the terminal element
+    if (terminalElement) {
+      terminalElement.innerHTML = '';
+    }
+
+    // Ensure any existing terminal instance is disposed
+    if (terminal) {
+      try {
+        terminal.clear();
+        terminal.reset();
+        terminal.dispose();
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+      terminal = null;
+    }
+
+    // Also clear any terminal reference in the tab
+    if (tab.terminal) {
+      try {
+        tab.terminal.clear();
+        tab.terminal.reset();
+        tab.terminal.dispose();
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+      tab.terminal = null;
+    }
 
     // Create terminal instance
     terminal = new Terminal({
@@ -142,7 +170,25 @@
     }
 
     if (terminal) {
+      // Clear the terminal buffer before disposing
+      try {
+        terminal.clear();
+        terminal.reset();
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
       terminal.dispose();
+      terminal = null;
+    }
+
+    // Clear the terminal element
+    if (terminalElement) {
+      terminalElement.innerHTML = '';
+    }
+
+    // Clear the terminal reference from the tab
+    if (tab.terminal) {
+      tab.terminal = null;
     }
   });
 </script>

@@ -17,6 +17,9 @@
   let sshAuthMethod = $state<'password' | 'key'>('password');
   let sshPassword = $state('');
   let sshKeyPath = $state('');
+  let workingDirectory = $state('');
+  let startupCommands = $state('');
+  let environmentVariables = $state('');
   let loading = $state(false);
   let inheritedConfig = $state<Record<string, string>>({});
 
@@ -54,6 +57,9 @@
       sshAuthMethod = (directConfig.ssh_auth_method as 'password' | 'key') || 'password';
       sshPassword = directConfig.ssh_password || '';
       sshKeyPath = directConfig.ssh_key_path || '';
+      workingDirectory = directConfig.working_directory || '';
+      startupCommands = directConfig.startup_commands || '';
+      environmentVariables = directConfig.environment_variables || '';
     } catch (error) {
       console.error('Failed to load config:', error);
     } finally {
@@ -85,6 +91,19 @@
           ...session,
           name: sessionName.trim()
         });
+      }
+
+      // Save general session config (for all session types)
+      if (session.type === 'session') {
+        if (workingDirectory.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'working_directory', workingDirectory.toString());
+        }
+        if (startupCommands.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'startup_commands', startupCommands.toString());
+        }
+        if (environmentVariables.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'environment_variables', environmentVariables.toString());
+        }
       }
 
       // Save SSH config if SSH session (only save non-empty values)
@@ -124,6 +143,15 @@
         }
         if (sshKeyPath.trim()) {
           await sessionsStore.setSessionConfig(session.id, 'ssh_key_path', sshKeyPath.toString());
+        }
+        if (workingDirectory.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'working_directory', workingDirectory.toString());
+        }
+        if (startupCommands.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'startup_commands', startupCommands.toString());
+        }
+        if (environmentVariables.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'environment_variables', environmentVariables.toString());
         }
       }
 
@@ -244,6 +272,54 @@
             </div>
           {/if}
 
+          <!-- Working Directory (for all session types) -->
+          {#if session.type === 'session'}
+            <div class="space-y-2">
+              <label class="block text-sm font-medium">Working Directory</label>
+              <input
+                type="text"
+                bind:value={workingDirectory}
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                placeholder={inheritedConfig.working_directory ? `Inherited: ${inheritedConfig.working_directory}` : '~/projects or /home/user'}
+              />
+              {#if inheritedConfig.working_directory && !workingDirectory}
+                <p class="text-xs text-yellow-400 mt-1">↓ Inherited: {inheritedConfig.working_directory}</p>
+              {:else}
+                <p class="text-xs text-gray-400">Directory where the session will start (supports ~ for home)</p>
+              {/if}
+            </div>
+
+            <div class="space-y-2">
+              <label class="block text-sm font-medium">Startup Commands</label>
+              <textarea
+                bind:value={startupCommands}
+                rows="3"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                placeholder={inheritedConfig.startup_commands ? `Inherited: ${inheritedConfig.startup_commands}` : 'cd ~/project; source .env'}
+              ></textarea>
+              {#if inheritedConfig.startup_commands && !startupCommands}
+                <p class="text-xs text-yellow-400 mt-1">↓ Inherited: {inheritedConfig.startup_commands}</p>
+              {:else}
+                <p class="text-xs text-gray-400">Commands to run when the session starts (separated by semicolons)</p>
+              {/if}
+            </div>
+
+            <div class="space-y-2">
+              <label class="block text-sm font-medium">Environment Variables</label>
+              <textarea
+                bind:value={environmentVariables}
+                rows="3"
+                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                placeholder={inheritedConfig.environment_variables ? `Inherited: ${inheritedConfig.environment_variables}` : 'KEY1=value1; KEY2=value2'}
+              ></textarea>
+              {#if inheritedConfig.environment_variables && !environmentVariables}
+                <p class="text-xs text-yellow-400 mt-1">↓ Inherited: {inheritedConfig.environment_variables}</p>
+              {:else}
+                <p class="text-xs text-gray-400">Environment variables (KEY=value; separated by semicolons)</p>
+              {/if}
+            </div>
+          {/if}
+
           {#if session.type === 'folder'}
             <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
               <h4 class="text-sm font-medium text-green-400">Folder Configuration (Inherited by Children)</h4>
@@ -286,8 +362,49 @@
                   />
                   {#if inheritedConfig.ssh_key_path && !sshKeyPath}
                     <p class="text-xs text-yellow-400 mt-1">↓ Inherited from parent: {inheritedConfig.ssh_key_path}</p>
+                  {/if}
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium mb-1">Working Directory</label>
+                  <input
+                    type="text"
+                    bind:value={workingDirectory}
+                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                    placeholder={inheritedConfig.working_directory ? `Inherited: ${inheritedConfig.working_directory}` : '~/projects'}
+                  />
+                  {#if inheritedConfig.working_directory && !workingDirectory}
+                    <p class="text-xs text-yellow-400 mt-1">↓ Inherited from parent: {inheritedConfig.working_directory}</p>
+                  {/if}
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium mb-1">Startup Commands</label>
+                  <textarea
+                    bind:value={startupCommands}
+                    rows="2"
+                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
+                    placeholder={inheritedConfig.startup_commands ? `Inherited: ${inheritedConfig.startup_commands}` : 'cd ~/project; source .env'}
+                  ></textarea>
+                  {#if inheritedConfig.startup_commands && !startupCommands}
+                    <p class="text-xs text-yellow-400 mt-1">↓ Inherited from parent: {inheritedConfig.startup_commands}</p>
                   {:else}
-                    <p class="text-xs text-gray-500 mt-1">Children can override these settings</p>
+                    <p class="text-xs text-gray-500 mt-1">Commands to run when sessions start</p>
+                  {/if}
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium mb-1">Environment Variables</label>
+                  <textarea
+                    bind:value={environmentVariables}
+                    rows="2"
+                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
+                    placeholder={inheritedConfig.environment_variables ? `Inherited: ${inheritedConfig.environment_variables}` : 'KEY1=value1; KEY2=value2'}
+                  ></textarea>
+                  {#if inheritedConfig.environment_variables && !environmentVariables}
+                    <p class="text-xs text-yellow-400 mt-1">↓ Inherited from parent: {inheritedConfig.environment_variables}</p>
+                  {:else}
+                    <p class="text-xs text-gray-500 mt-1">Environment variables for sessions (KEY=value; separated)</p>
                   {/if}
                 </div>
               </div>

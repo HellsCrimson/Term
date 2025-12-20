@@ -79,6 +79,12 @@
 
     const items: MenuItem[] = [
       {
+        label: contextMenuTab.pinned ? 'Unpin Tab' : 'Pin Tab',
+        icon: contextMenuTab.pinned ? '📌' : '📍',
+        action: () => terminalsStore.togglePin(contextMenuTab!.id)
+      },
+      { separator: true } as MenuItem,
+      {
         label: 'Rename',
         icon: '✏️',
         action: () => handleRenameTab(contextMenuTab!)
@@ -123,7 +129,8 @@
         label: 'Close',
         icon: '❌',
         action: () => terminalsStore.closeTab(contextMenuTab!.id),
-        danger: true
+        danger: true,
+        disabled: contextMenuTab.pinned
       }
     );
 
@@ -160,7 +167,10 @@
           autofocus
         />
       {:else}
-        <span class="flex-1 truncate text-sm">
+        <span class="flex-1 truncate text-sm flex items-center gap-1">
+          {#if tab.pinned}
+            <span class="text-xs" title="Pinned">📌</span>
+          {/if}
           {tab.sessionName}
           {#if tab.exited}
             <span class="text-xs ml-1">(exited {tab.exitCode ?? ''})</span>
@@ -168,19 +178,21 @@
         </span>
       {/if}
 
-      <button
-        class="ml-2 hover:bg-gray-600 rounded p-0.5"
-        onclick={(e) => handleTabClose(e, tab)}
-        aria-label="Close tab"
-      >
-        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fill-rule="evenodd"
-            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-            clip-rule="evenodd"
-          />
-        </svg>
-      </button>
+      {#if !tab.pinned}
+        <button
+          class="ml-2 hover:bg-gray-600 rounded p-0.5"
+          onclick={(e) => handleTabClose(e, tab)}
+          aria-label="Close tab"
+        >
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+      {/if}
     </div>
   {/each}
 </div>

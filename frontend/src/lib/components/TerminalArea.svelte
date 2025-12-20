@@ -20,7 +20,9 @@
     <div class="flex-1 overflow-hidden relative">
       {#each tabs as tab (tab.id)}
         <div class="absolute inset-0" style="display: {tab.active ? 'block' : 'none'}">
-          <TerminalView {tab} />
+          {#key tab.id}
+            <TerminalView {tab} />
+          {/key}
         </div>
       {/each}
     </div>

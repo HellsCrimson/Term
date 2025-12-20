@@ -14,6 +14,7 @@ export interface TerminalTab {
   active: boolean;
   exited: boolean;
   exitCode?: number;
+  pinned?: boolean;
 }
 
 class TerminalsStore {
@@ -83,7 +84,15 @@ class TerminalsStore {
       return;
     }
 
-    LoggingService.Log(`Tab found: ${tab.sessionName}, exited=${tab.exited}`, "INFO");
+    LoggingService.Log(`Tab found: ${tab.sessionName}, exited=${tab.exited}, pinned=${tab.pinned}`, "INFO");
+
+    // Prevent closing pinned tabs unless explicitly skipping confirmation
+    if (tab.pinned && !skipConfirmation) {
+      LoggingService.Log('Cannot close pinned tab', "INFO");
+      alert(`Tab "${tab.sessionName}" is pinned. Unpin it first to close.`);
+      return;
+    }
+
     LoggingService.Log(`confirmTabClose setting: ${settingsStore.settings.confirmTabClose}`, "INFO");
 
     // Check for confirmation if enabled and not exited
@@ -105,7 +114,14 @@ class TerminalsStore {
 
     // Dispose terminal
     if (tab.terminal) {
-      tab.terminal.dispose();
+      try {
+        tab.terminal.clear();
+        tab.terminal.reset();
+        tab.terminal.dispose();
+      } catch (e) {
+        console.error('Error disposing terminal:', e);
+      }
+      tab.terminal = null;
     }
 
     const index = this.tabs.findIndex(t => t.id === id);
@@ -138,6 +154,14 @@ class TerminalsStore {
     const tab = this.getTab(id);
     if (tab) {
       tab.sessionName = newName;
+    }
+  }
+
+  togglePin(id: string) {
+    const tab = this.getTab(id);
+    if (tab) {
+      tab.pinned = !tab.pinned;
+      LoggingService.Log(`Tab ${tab.sessionName} ${tab.pinned ? 'pinned' : 'unpinned'}`, "INFO");
     }
   }
 

@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/creack/pty"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -76,13 +78,24 @@ func (t *TerminalService) StartSession(req StartSessionRequest) error {
 
 	// Set environment variables
 	cmd.Env = os.Environ()
-	if cwd, ok := req.Config["cwd"]; ok {
-		cmd.Dir = cwd
+
+	// Set working directory
+	if workingDir, ok := req.Config["working_directory"]; ok && workingDir != "" {
+		// Expand home directory if needed
+		if len(workingDir) > 0 && workingDir[0] == '~' {
+			homeDir, err := os.UserHomeDir()
+			if err == nil {
+				workingDir = homeDir + workingDir[1:]
+			}
+		}
+		cmd.Dir = workingDir
 	}
 
 	// Add any custom environment variables from config
-	if envVars, ok := req.Config["env"]; ok {
-		cmd.Env = append(cmd.Env, envVars)
+	if envVars, ok := req.Config["environment_variables"]; ok && envVars != "" {
+		// Parse semicolon-separated KEY=value pairs
+		vars := t.parseEnvVars(envVars)
+		cmd.Env = append(cmd.Env, vars...)
 	}
 
 	// Start PTY
@@ -120,11 +133,18 @@ func (t *TerminalService) StartSession(req StartSessionRequest) error {
 	go t.monitorExit(session)
 
 	// Run startup commands if provided
-	if startupCmd, ok := req.Config["startup_command"]; ok && startupCmd != "" {
+	if startupCmds, ok := req.Config["startup_commands"]; ok && startupCmds != "" {
 		go func() {
 			// Give shell a moment to initialize
 			// time.Sleep(100 * time.Millisecond)
-			t.WriteToSession(req.ID, startupCmd+"\n")
+
+			// Parse semicolon-separated commands
+			cmds := t.parseCommands(startupCmds)
+			for _, cmd := range cmds {
+				if cmd != "" {
+					t.WriteToSession(req.ID, cmd+"\n")
+				}
+			}
 		}()
 	}
 
@@ -174,6 +194,32 @@ func (t *TerminalService) findShell(paths []string, args []string) (string, []st
 		}
 	}
 	return "", nil, fmt.Errorf("shell not found in paths: %v", paths)
+}
+
+// parseEnvVars parses semicolon-separated KEY=value pairs
+func (t *TerminalService) parseEnvVars(envVars string) []string {
+	var result []string
+	parts := strings.Split(envVars, ";")
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" && strings.Contains(part, "=") {
+			result = append(result, part)
+		}
+	}
+	return result
+}
+
+// parseCommands parses semicolon-separated commands
+func (t *TerminalService) parseCommands(commands string) []string {
+	var result []string
+	parts := strings.Split(commands, ";")
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			result = append(result, part)
+		}
+	}
+	return result
 }
 
 // startSSHSession starts an SSH session
@@ -320,6 +366,43 @@ func (t *TerminalService) startSSHSession(req StartSessionRequest) error {
 
 	// Monitor SSH session exit
 	go t.monitorSSHExit(session)
+
+	// Apply working directory, env vars, and startup commands for SSH
+	go func() {
+		// Give SSH shell a moment to initialize
+		time.Sleep(100 * time.Millisecond)
+
+		// Change working directory if specified
+		if workingDir, ok := req.Config["working_directory"]; ok && workingDir != "" {
+			// Expand ~ to home directory on remote
+			if strings.HasPrefix(workingDir, "~/") {
+				t.WriteToSession(req.ID, "cd "+workingDir+"\n")
+			} else if workingDir == "~" {
+				t.WriteToSession(req.ID, "cd ~\n")
+			} else {
+				t.WriteToSession(req.ID, "cd "+workingDir+"\n")
+			}
+		}
+
+		// Set environment variables if specified
+		if envVars, ok := req.Config["environment_variables"]; ok && envVars != "" {
+			vars := t.parseEnvVars(envVars)
+			for _, v := range vars {
+				// Use export for bash/zsh/fish compatibility
+				t.WriteToSession(req.ID, "export "+v+"\n")
+			}
+		}
+
+		// Run startup commands if specified
+		if startupCmds, ok := req.Config["startup_commands"]; ok && startupCmds != "" {
+			cmds := t.parseCommands(startupCmds)
+			for _, cmd := range cmds {
+				if cmd != "" {
+					t.WriteToSession(req.ID, cmd+"\n")
+				}
+			}
+		}
+	}()
 
 	return nil
 }
