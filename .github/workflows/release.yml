@@ -17,15 +17,13 @@ on:
         type: boolean
         default: false
 
-# permissions:
-#   contents: write
+permissions:
+  contents: write
 
 jobs:
   build:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    # permissions:
-    #   contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -118,8 +116,8 @@ jobs:
     name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
-    # permissions:
-    #   contents: write
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -130,15 +128,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-
-      - name: Create Git tag if missing
-        run: |
-          git fetch --tags
-          if ! git rev-parse "${{ github.event.inputs.tag }}" >/dev/null 2>&1; then
-            git tag "${{ github.event.inputs.tag }}"
-            git push origin "${{ github.event.inputs.tag }}"
-            sleep 5
-          fi
 
       - name: Create GitHub Release
         env:
@@ -151,8 +140,20 @@ jobs:
             TITLE="$TAG"
           fi
 
-          gh release create "$TAG" \
-            artifacts/**/* \
-            --title "$TITLE" \
-            ${{ github.event.inputs.prerelease && '--prerelease' || '' }} \
-            --generate-notes
+          # Check if tag exists
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists, creating release for existing tag"
+            gh release create "$TAG" \
+              artifacts/**/* \
+              --title "$TITLE" \
+              ${{ github.event.inputs.prerelease && '--prerelease' || '' }} \
+              --generate-notes
+          else
+            echo "Tag $TAG does not exist, creating new tag and release"
+            gh release create "$TAG" \
+              artifacts/**/* \
+              --title "$TITLE" \
+              --target "${{ github.sha }}" \
+              ${{ github.event.inputs.prerelease && '--prerelease' || '' }} \
+              --generate-notes
+          fi
