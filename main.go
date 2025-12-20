@@ -72,6 +72,14 @@ func main() {
 	app.RegisterService(application.NewService(systemStatsService))
 	systemStatsService.Start()
 
+	// Create Guacamole service and HTTP server
+	guacService := NewGuacamoleService(sessionService)
+	httpServer := NewHTTPServer(3000, guacService)
+	if err := httpServer.Start(); err != nil {
+		log.Printf("Failed to start HTTP server: %v", err)
+	}
+	defer httpServer.Stop()
+
 	// Create main window
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title: "Terminal Manager",

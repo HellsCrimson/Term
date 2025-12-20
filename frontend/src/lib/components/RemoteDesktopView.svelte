@@ -4,6 +4,7 @@
   import type { TerminalTab } from '../stores/terminals.svelte';
   import { terminalsStore } from '../stores/terminals.svelte';
   import { sessionsStore } from '../stores/sessions.svelte';
+  import { LoggingService } from '$bindings/term';
   import StatusBar from './StatusBar.svelte';
 
   interface Props {
@@ -15,6 +16,11 @@
   let displayElement: HTMLDivElement;
   let client: any = null;
   let resizeObserver: ResizeObserver | null = null;
+  let lastContainerWidth = 0;
+  let lastContainerHeight = 0;
+  let isResizing = false;
+  let currentScale = 1.0;
+  let mouse: any = null;
 
   // Focus desktop when tab becomes active
   $effect(() => {
@@ -34,8 +40,8 @@
       const config = await sessionsStore.getEffectiveConfig(tab.sessionId);
 
       // Create WebSocket tunnel URL
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/api/guacamole/${tab.backendSessionId}`;
+      // Use sessionId (sidebar node) for configuration lookup
+      const wsUrl = `ws://localhost:3000/api/guacamole/${tab.sessionId}`;
 
       // Create Guacamole tunnel
       const tunnel = new Guacamole.WebSocketTunnel(wsUrl);
@@ -49,12 +55,17 @@
       // Add display to DOM
       displayElement.appendChild(display.getElement());
 
-      // Set display scale mode
+      // Set initial display scale
       display.scale(1.0);
+      currentScale = 1.0;
+
+      // Initialize container size tracking
+      lastContainerWidth = displayElement.clientWidth;
+      lastContainerHeight = displayElement.clientHeight;
 
       // Error handler
       client.onerror = (error: any) => {
-        console.error('Guacamole client error:', error);
+        LoggingService.Log(`Guacamole client error: ${error.message || error}`, "ERROR");
         if (displayElement) {
           const errorDiv = document.createElement('div');
           errorDiv.className = 'flex items-center justify-center h-full text-red-400';
@@ -64,14 +75,65 @@
         }
       };
 
+      // Debounce resize handling to prevent flickering
+      let resizeTimeout: number | null = null;
+      const handleResize = () => {
+        if (resizeTimeout) {
+          clearTimeout(resizeTimeout);
+        }
+        resizeTimeout = setTimeout(() => {
+          // Prevent re-entrant resize calls
+          if (isResizing) {
+            resizeTimeout = null;
+            return;
+          }
+
+          if (client && displayElement) {
+            const displayDiv = display.getElement();
+            const containerWidth = displayElement.clientWidth;
+            const containerHeight = displayElement.clientHeight;
+
+            // Only resize if container size changed by more than 5 pixels to prevent feedback loop
+            const widthDiff = Math.abs(containerWidth - lastContainerWidth);
+            const heightDiff = Math.abs(containerHeight - lastContainerHeight);
+
+            if (widthDiff > 5 || heightDiff > 5) {
+              LoggingService.Log(`Handling resize event for Guacamole display: ${containerHeight}, ${containerWidth} (diff: ${heightDiff}, ${widthDiff})`, "DEBUG");
+
+              isResizing = true;
+              lastContainerWidth = containerWidth;
+              lastContainerHeight = containerHeight;
+
+              const displayWidth = displayDiv.offsetWidth;
+              const displayHeight = displayDiv.offsetHeight;
+
+              if (displayWidth > 0 && displayHeight > 0) {
+                const scaleX = containerWidth / displayWidth;
+                const scaleY = containerHeight / displayHeight;
+                const scale = Math.min(scaleX, scaleY, 1.0);
+                display.scale(scale);
+                currentScale = scale;
+                LoggingService.Log(`Applied scale: ${scale}`, "DEBUG");
+              }
+
+              // Clear the resizing flag after a delay to allow the DOM to settle
+              setTimeout(() => {
+                isResizing = false;
+              }, 200);
+            }
+          }
+          resizeTimeout = null;
+        }, 100); // 100ms debounce
+      };
+
       // State change handler
       client.onstatechange = (state: number) => {
-        console.log('Guacamole state changed:', state);
+        LoggingService.Log(`Guacamole state changed: ${state}`, "DEBUG");
 
         if (state === 3) { // CONNECTED
-          console.log('Guacamole client connected');
+          LoggingService.Log('Guacamole client connected', "INFO");
         } else if (state === 5) { // DISCONNECTED
-          console.log('Guacamole client disconnected');
+          LoggingService.Log('Guacamole client disconnected', "INFO");
           if (!tab.exited) {
             tab.exited = true;
             tab.exitCode = 0;
@@ -81,12 +143,12 @@
 
       // Name handler (for window title)
       client.onname = (name: string) => {
-        console.log('Remote desktop name:', name);
+        LoggingService.Log(`Remote desktop name: ${name}`, "DEBUG");
       };
 
       // Clipboard handler
       client.onclipboard = (stream: any, mimetype: string) => {
-        console.log('Clipboard received:', mimetype);
+        LoggingService.Log(`Clipboard received: ${mimetype}`, "DEBUG");
         // Handle clipboard data
         if (mimetype === 'text/plain') {
           const reader = new Guacamole.StringReader(stream);
@@ -99,20 +161,35 @@
           reader.onend = () => {
             // Copy to system clipboard
             navigator.clipboard.writeText(text).catch(err => {
-              console.error('Failed to write to clipboard:', err);
+              LoggingService.Log(`Failed to write to clipboard: ${err}`, "ERROR");
             });
           };
         }
       };
 
       // Mouse handling
-      const mouse = new Guacamole.Mouse(display.getElement());
+      mouse = new Guacamole.Mouse(display.getElement());
 
-      // mouse.onmousedown =
-      // mouse.onmouseup =
-      // mouse.onmousemove = (mouseState: any) => {
-      //   client.sendMouseState(mouseState);
-      // };
+      mouse.onmousedown = (mouseState: any) => {
+        // Scale mouse coordinates to match display scale
+        mouseState.x = mouseState.x / currentScale;
+        mouseState.y = mouseState.y / currentScale;
+        client.sendMouseState(mouseState);
+      };
+
+      mouse.onmouseup = (mouseState: any) => {
+        // Scale mouse coordinates to match display scale
+        mouseState.x = mouseState.x / currentScale;
+        mouseState.y = mouseState.y / currentScale;
+        client.sendMouseState(mouseState);
+      };
+
+      mouse.onmousemove = (mouseState: any) => {
+        // Scale mouse coordinates to match display scale
+        mouseState.x = mouseState.x / currentScale;
+        mouseState.y = mouseState.y / currentScale;
+        client.sendMouseState(mouseState);
+      };
 
       // Keyboard handling
       const keyboard = new Guacamole.Keyboard(document);
@@ -125,31 +202,16 @@
         client.sendKeyEvent(0, keysym);
       };
 
+      // Set up resize observer to scale display
+      resizeObserver = new ResizeObserver(handleResize);
+      resizeObserver.observe(displayElement);
+
       // Connect to the server with configuration
       const connectionParams = buildConnectionParams(config, tab.sessionType);
       client.connect(connectionParams);
 
-      // Set up resize observer to scale display
-      resizeObserver = new ResizeObserver(() => {
-        if (client && displayElement) {
-          const displayDiv = display.getElement();
-          const containerWidth = displayElement.clientWidth;
-          const containerHeight = displayElement.clientHeight;
-          const displayWidth = displayDiv.offsetWidth;
-          const displayHeight = displayDiv.offsetHeight;
-
-          if (displayWidth > 0 && displayHeight > 0) {
-            const scaleX = containerWidth / displayWidth;
-            const scaleY = containerHeight / displayHeight;
-            const scale = Math.min(scaleX, scaleY, 1.0);
-            display.scale(scale);
-          }
-        }
-      });
-      resizeObserver.observe(displayElement);
-
     } catch (error) {
-      console.error('Failed to create Guacamole client:', error);
+      LoggingService.Log(`Failed to create Guacamole client: ${error}`, "ERROR");
       if (displayElement) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'flex items-center justify-center h-full text-red-400';
@@ -168,7 +230,7 @@
       try {
         client.disconnect();
       } catch (e) {
-        console.error('Error disconnecting Guacamole client:', e);
+        LoggingService.Log(`Error disconnecting Guacamole client: ${e}`, "ERROR");
       }
       client = null;
     }
@@ -234,10 +296,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
   }
 
   :global(.desktop-container canvas) {
     max-width: 100%;
     max-height: 100%;
+    object-fit: contain;
   }
 </style>

@@ -1,5 +1,6 @@
 import type { SessionNode, TreeNode } from '../types';
 import * as SessionService from '$bindings/term/sessionservice';
+import { LoggingService } from '$bindings/term';
 
 class SessionsStore {
   sessions = $state<SessionNode[]>([]);
@@ -12,18 +13,23 @@ class SessionsStore {
     try {
       // Call Wails backend
       const sessions = await SessionService.GetAllSessions();
-      this.sessions = sessions || [];
+      // Cast the data to proper types (backend returns string, we need literal types)
+      this.sessions = (sessions || []).map(s => ({
+        ...s,
+        type: s.type as 'folder' | 'session',
+        sessionType: s.sessionType as 'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'git-bash' | 'rdp' | 'vnc' | 'telnet' | 'custom' | undefined
+      }));
+
       const treeData = await SessionService.GetSessionTree();
-      this.tree = treeData || [];
+      // Cast tree data recursively
+      this.tree = (treeData || []).map(node => this.castTreeNode(node));
 
       // Log what we received
-      await import('$bindings/term/loggingservice').then(log => {
-        log.Log(`loadSessions: Got ${this.sessions.length} sessions, ${this.tree.length} root nodes`);
-        const sessionIds = this.sessions.map(s => `${s.id}(parent=${s.parentId},pos=${s.position})`);
-        log.Log(`loadSessions: Sessions: ${sessionIds.join(', ')}`);
-      });
+      LoggingService.Log(`loadSessions: Got ${this.sessions.length} sessions, ${this.tree.length} root nodes`, "DEBUG");
+      const sessionIds = this.sessions.map(s => `${s.id}(parent=${s.parentId},pos=${s.position},type=${s.type},sessionType=${s.sessionType})`);
+      LoggingService.Log(`loadSessions: Sessions: ${sessionIds.join(', ')}`, "DEBUG");
     } catch (error) {
-      console.error('Failed to load sessions:', error);
+      LoggingService.Log(`Failed to load sessions: ${error}`, "ERROR");
       this.sessions = [];
       this.tree = [];
     } finally {
@@ -31,12 +37,23 @@ class SessionsStore {
     }
   }
 
+  private castTreeNode(node: any): TreeNode {
+    return {
+      session: {
+        ...node.session,
+        type: node.session.type as 'folder' | 'session',
+        sessionType: node.session.sessionType as 'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'git-bash' | 'rdp' | 'vnc' | 'telnet' | 'custom' | undefined
+      },
+      children: (node.children || []).map((child: any) => this.castTreeNode(child))
+    };
+  }
+
   async createSession(session: Partial<SessionNode>) {
     try {
       await SessionService.CreateSession(session as any);
       await this.loadSessions();
     } catch (error) {
-      console.error('Failed to create session:', error);
+      LoggingService.Log(`Failed to create session: ${error}`, "ERROR");
       throw error;
     }
   }
@@ -46,7 +63,7 @@ class SessionsStore {
       await SessionService.UpdateSession(session as any);
       await this.loadSessions();
     } catch (error) {
-      console.error('Failed to update session:', error);
+      LoggingService.Log(`Failed to update session: ${error}`, "ERROR");
       throw error;
     }
   }
@@ -56,7 +73,7 @@ class SessionsStore {
       await SessionService.DeleteSession(id, cascade);
       await this.loadSessions();
     } catch (error) {
-      console.error('Failed to delete session:', error);
+      LoggingService.Log(`Failed to delete session: ${error}`, "ERROR");
       throw error;
     }
   }
@@ -65,7 +82,7 @@ class SessionsStore {
     try {
       return await SessionService.GetEffectiveConfig(sessionId);
     } catch (error) {
-      console.error('Failed to get effective config:', error);
+      LoggingService.Log(`Failed to get effective config: ${error}`, "ERROR");
       return {};
     }
   }
@@ -74,7 +91,7 @@ class SessionsStore {
     try {
       return await SessionService.GetSessionConfig(sessionId);
     } catch (error) {
-      console.error('Failed to get session config:', error);
+      LoggingService.Log(`Failed to get session config: ${error}`, "ERROR");
       return {};
     }
   }
@@ -90,9 +107,11 @@ class SessionsStore {
 
   async setSessionConfig(sessionId: string, key: string, value: string, valueType: string = 'string') {
     try {
+      LoggingService.Log(`[Frontend] setSessionConfig: sessionId=${sessionId}, key=${key}, value=${value}, valueType=${valueType}`, "DEBUG");
       await SessionService.SetSessionConfig(sessionId, key, value, valueType);
+      LoggingService.Log(`[Frontend] setSessionConfig SUCCESS: ${key}=${value}`, "DEBUG");
     } catch (error) {
-      console.error('Failed to set session config:', error);
+      LoggingService.Log(`Failed to set session config: ${error}`, "ERROR");
       throw error;
     }
   }
@@ -102,7 +121,7 @@ class SessionsStore {
       await SessionService.MoveSession(sessionId, newParentId, newPosition);
       await this.loadSessions();
     } catch (error) {
-      console.error('Failed to move session:', error);
+      LoggingService.Log(`Failed to move session: ${error}`, "ERROR");
       throw error;
     }
   }

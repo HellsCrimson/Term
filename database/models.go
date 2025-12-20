@@ -165,6 +165,7 @@ func (db *DB) GetSessionConfigs(sessionID string) (map[string]string, error) {
 		configs[key] = value
 	}
 
+	fmt.Printf("DEBUG GetSessionConfigs: sessionID=%s, configs=%+v\n", sessionID, configs)
 	return configs, rows.Err()
 }
 
@@ -207,11 +208,15 @@ func (db *DB) GetEffectiveConfig(sessionID string) (map[string]string, error) {
 
 // SetSessionConfig sets or updates a config value
 func (db *DB) SetSessionConfig(sessionID, key, value, valueType string) error {
+	fmt.Printf("DEBUG SetSessionConfig: sessionID=%s, key=%s, value=%s, valueType=%s\n", sessionID, key, value, valueType)
 	_, err := db.conn.Exec(`
 		INSERT INTO configs (session_id, key, value, value_type)
 		VALUES (?, ?, ?, ?)
 		ON CONFLICT(session_id, key) DO UPDATE SET value = ?, value_type = ?
 	`, sessionID, key, value, valueType, value, valueType)
+	if err != nil {
+		fmt.Printf("DEBUG SetSessionConfig ERROR: %v\n", err)
+	}
 	return err
 }
 

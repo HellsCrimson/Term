@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { LoggingService } from '$bindings/term';
   import { sessionsStore } from '../stores/sessions.svelte';
 
   interface Props {
@@ -14,41 +15,6 @@
   let sessionName = $state('');
   let sessionType = $state<'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'rdp' | 'vnc' | 'telnet'>('bash');
   let parentId = $state<string | null>(defaultParentId || null);
-
-  // Reset when dialog opens
-  $effect(() => {
-    if (show) {
-      itemType = defaultType || 'session';
-      parentId = defaultParentId || null;
-      sessionName = '';
-      sessionType = 'bash';
-      sshHost = '';
-      sshPort = '22';
-      sshUsername = '';
-      sshAuthMethod = 'password';
-      sshPassword = '';
-      sshKeyPath = '';
-      workingDirectory = '';
-      startupCommands = '';
-      environmentVariables = '';
-      rdpHost = '';
-      rdpPort = '3389';
-      rdpUsername = '';
-      rdpPassword = '';
-      rdpDomain = '';
-      rdpSecurity = 'any';
-      vncHost = '';
-      vncPort = '5900';
-      vncPassword = '';
-      telnetHost = '';
-      telnetPort = '23';
-      telnetUsername = '';
-      telnetPassword = '';
-      desktopWidth = '1920';
-      desktopHeight = '1080';
-      desktopColorDepth = '16';
-    }
-  });
 
   // SSH-specific fields
   let sshHost = $state('');
@@ -88,7 +54,10 @@
   let desktopColorDepth = $state<'8' | '16' | '24' | '32'>('16');
 
   async function handleCreate() {
+    LoggingService.Log(`[NewSessionDialog] handleCreate called: itemType=${itemType}, sessionType=${sessionType}, sessionName=${sessionName}`, "DEBUG");
+
     if (!sessionName.trim()) {
+      LoggingService.Log(`[NewSessionDialog] Aborting - empty session name`, "DEBUG");
       return;
     }
 
@@ -246,7 +215,7 @@
       resetForm();
       onClose();
     } catch (error) {
-      console.error(`Failed to create ${itemType}:`, error);
+      LoggingService.Log(`Failed to create ${itemType}: ${error}`, "ERROR");
       alert(`Failed to create ${itemType}: ` + error);
     }
   }
@@ -293,7 +262,7 @@
     try {
       await sessionsStore.setSessionConfig(sessionId, key, value);
     } catch (error) {
-      console.error(`Failed to set config ${key}:`, error);
+      LoggingService.Log(`Failed to set config ${key}: ${error}`, "ERROR");
     }
   }
 

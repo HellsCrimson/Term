@@ -4,8 +4,10 @@ go 1.24.0
 
 require (
 	github.com/creack/pty v1.1.24
+	github.com/gorilla/websocket v1.5.3
 	github.com/shirou/gopsutil/v4 v4.25.11
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.42
+	github.com/wwt/guac v1.3.2
 	golang.org/x/crypto v0.36.0
 	modernc.org/sqlite v1.40.1
 )
@@ -45,6 +47,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/samber/lo v1.49.1 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
