@@ -48,7 +48,7 @@
   let desktopColorDepth = $state<'8' | '16' | '24' | '32'>('16');
 
   // Tab state
-  let activeTab = $state<'connection' | 'session' | 'display'>('connection');
+  let activeTab = $state<'connection' | 'session' | 'display' | 'vnc'>('connection');
 
   // Load session config when dialog opens
   $effect(() => {
@@ -264,7 +264,7 @@
 
       // Save folder config (inherited by children)
       if (session.type === 'folder') {
-        // Only save non-empty values
+        // SSH config
         if (sshUsername.trim()) {
           await sessionsStore.setSessionConfig(session.id, 'ssh_username', sshUsername.toString());
         }
@@ -274,6 +274,8 @@
         if (sshKeyPath.trim()) {
           await sessionsStore.setSessionConfig(session.id, 'ssh_key_path', sshKeyPath.toString());
         }
+
+        // Terminal config
         if (workingDirectory.trim()) {
           await sessionsStore.setSessionConfig(session.id, 'working_directory', workingDirectory.toString());
         }
@@ -282,6 +284,26 @@
         }
         if (environmentVariables.trim()) {
           await sessionsStore.setSessionConfig(session.id, 'environment_variables', environmentVariables.toString());
+        }
+
+        // RDP/VNC config
+        if (rdpUsername.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'rdp_username', rdpUsername.toString());
+        }
+        if (rdpDomain.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'rdp_domain', rdpDomain.toString());
+        }
+        if (rdpSecurity) {
+          await sessionsStore.setSessionConfig(session.id, 'rdp_security', rdpSecurity.toString());
+        }
+        if (desktopWidth.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'desktop_width', desktopWidth.toString());
+        }
+        if (desktopHeight.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'desktop_height', desktopHeight.toString());
+        }
+        if (desktopColorDepth) {
+          await sessionsStore.setSessionConfig(session.id, 'desktop_color_depth', desktopColorDepth.toString());
         }
       }
 
@@ -824,11 +846,49 @@
           {/if}
 
           {#if session.type === 'folder'}
-            <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+            <div class="mb-2">
               <h4 class="text-sm font-medium text-green-400">Folder Configuration (Inherited by Children)</h4>
               <p class="text-xs text-gray-400">These settings will be inherited by all sessions and subfolders inside this folder.</p>
+            </div>
 
-              <div class="space-y-3">
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-600 overflow-x-auto">
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors {activeTab === 'connection' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}"
+                onclick={() => activeTab = 'connection'}
+              >
+                SSH
+              </button>
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors {activeTab === 'session' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}"
+                onclick={() => activeTab = 'session'}
+              >
+                Terminal
+              </button>
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors {activeTab === 'display' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}"
+                onclick={() => activeTab = 'display'}
+              >
+                RDP
+              </button>
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors {activeTab === 'vnc' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}"
+                onclick={() => activeTab = 'vnc'}
+              >
+                VNC
+              </button>
+            </div>
+
+            <!-- Tab Content -->
+            {#if activeTab === 'connection'}
+              <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+                <h4 class="text-sm font-medium text-blue-400">SSH Configuration</h4>
+                <p class="text-xs text-gray-400">Settings inherited by SSH sessions</p>
+
                 <div>
                   <label class="block text-xs font-medium mb-1">SSH Username</label>
                   <input
@@ -867,6 +927,11 @@
                     <p class="text-xs text-yellow-400 mt-1">↓ Inherited from parent: {inheritedConfig.ssh_key_path}</p>
                   {/if}
                 </div>
+              </div>
+            {:else if activeTab === 'session'}
+              <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+                <h4 class="text-sm font-medium text-purple-400">Terminal Configuration</h4>
+                <p class="text-xs text-gray-400">Settings inherited by terminal sessions (bash, zsh, fish, pwsh)</p>
 
                 <div>
                   <label class="block text-xs font-medium mb-1">Working Directory</label>
@@ -911,7 +976,137 @@
                   {/if}
                 </div>
               </div>
-            </div>
+            {:else if activeTab === 'display'}
+              <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+                <h4 class="text-sm font-medium text-cyan-400">RDP Configuration</h4>
+                <p class="text-xs text-gray-400">Settings inherited by RDP sessions</p>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-medium mb-1">RDP Username</label>
+                    <input
+                      type="text"
+                      bind:value={rdpUsername}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder={inheritedConfig.rdp_username ? `Inherited: ${inheritedConfig.rdp_username}` : 'administrator'}
+                    />
+                    {#if inheritedConfig.rdp_username && !rdpUsername}
+                      <p class="text-xs text-yellow-400 mt-1">↓ Inherited: {inheritedConfig.rdp_username}</p>
+                    {/if}
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium mb-1">RDP Domain</label>
+                    <input
+                      type="text"
+                      bind:value={rdpDomain}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder={inheritedConfig.rdp_domain ? `Inherited: ${inheritedConfig.rdp_domain}` : 'CORP'}
+                    />
+                    {#if inheritedConfig.rdp_domain && !rdpDomain}
+                      <p class="text-xs text-yellow-400 mt-1">↓ Inherited: {inheritedConfig.rdp_domain}</p>
+                    {/if}
+                  </div>
+
+                  <div class="col-span-2">
+                    <label class="block text-xs font-medium mb-1">RDP Security</label>
+                    <select
+                      bind:value={rdpSecurity}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="any">Any</option>
+                      <option value="nla">NLA</option>
+                      <option value="tls">TLS</option>
+                      <option value="rdp">RDP</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="pt-3 border-t border-gray-600">
+                  <h5 class="text-xs font-medium text-gray-300 mb-2">Display Settings</h5>
+                  <div class="grid grid-cols-3 gap-3">
+                    <div>
+                      <label class="block text-xs font-medium mb-1">Width</label>
+                      <input
+                        type="text"
+                        bind:value={desktopWidth}
+                        class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                        placeholder={inheritedConfig.desktop_width ? `Inherited: ${inheritedConfig.desktop_width}` : '1920'}
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium mb-1">Height</label>
+                      <input
+                        type="text"
+                        bind:value={desktopHeight}
+                        class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                        placeholder={inheritedConfig.desktop_height ? `Inherited: ${inheritedConfig.desktop_height}` : '1080'}
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium mb-1">Color Depth</label>
+                      <select
+                        bind:value={desktopColorDepth}
+                        class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="8">8-bit</option>
+                        <option value="16">16-bit</option>
+                        <option value="24">24-bit</option>
+                        <option value="32">32-bit</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {:else if activeTab === 'vnc'}
+              <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+                <h4 class="text-sm font-medium text-green-400">VNC Configuration</h4>
+                <p class="text-xs text-gray-400">Settings inherited by VNC sessions</p>
+
+                <div class="pt-3 border-t border-gray-600">
+                  <h5 class="text-xs font-medium text-gray-300 mb-2">Display Settings</h5>
+                  <div class="grid grid-cols-3 gap-3">
+                    <div>
+                      <label class="block text-xs font-medium mb-1">Width</label>
+                      <input
+                        type="text"
+                        bind:value={desktopWidth}
+                        class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                        placeholder={inheritedConfig.desktop_width ? `Inherited: ${inheritedConfig.desktop_width}` : '1920'}
+                      />
+                      {#if inheritedConfig.desktop_width && !desktopWidth}
+                        <p class="text-xs text-yellow-400 mt-1">↓ Inherited: {inheritedConfig.desktop_width}</p>
+                      {/if}
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium mb-1">Height</label>
+                      <input
+                        type="text"
+                        bind:value={desktopHeight}
+                        class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                        placeholder={inheritedConfig.desktop_height ? `Inherited: ${inheritedConfig.desktop_height}` : '1080'}
+                      />
+                      {#if inheritedConfig.desktop_height && !desktopHeight}
+                        <p class="text-xs text-yellow-400 mt-1">↓ Inherited: {inheritedConfig.desktop_height}</p>
+                      {/if}
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium mb-1">Color Depth</label>
+                      <select
+                        bind:value={desktopColorDepth}
+                        class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="8">8-bit</option>
+                        <option value="16">16-bit</option>
+                        <option value="24">24-bit</option>
+                        <option value="32">32-bit</option>
+                      </select>
+                    </div>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-2">These settings are shared with RDP sessions</p>
+                </div>
+              </div>
+            {/if}
           {/if}
         </div>
 
