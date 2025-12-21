@@ -53,6 +53,16 @@
   let desktopHeight = $state('1080');
   let desktopColorDepth = $state<'8' | '16' | '24' | '32'>('16');
 
+  // Tab state
+  let activeTab = $state<'connection' | 'session' | 'display'>('connection');
+
+  // Reset active tab when session type changes
+  $effect(() => {
+    if (itemType === 'session') {
+      activeTab = 'connection';
+    }
+  });
+
   async function handleCreate() {
     LoggingService.Log(`[NewSessionDialog] handleCreate called: itemType=${itemType}, sessionType=${sessionType}, sessionName=${sessionName}`, "DEBUG");
 
@@ -325,260 +335,383 @@
           </div>
 
           {#if sessionType === 'ssh'}
-            <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
-              <div class="flex items-center justify-between">
-                <h4 class="text-sm font-medium text-blue-400">SSH Connection</h4>
-                <p class="text-xs text-gray-400">* Only host is required</p>
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div class="col-span-2">
-                  <label class="block text-xs font-medium mb-1">Host *</label>
-                  <input
-                    type="text"
-                    bind:value={sshHost}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="192.168.1.100 or example.com"
-                  />
-                </div>
-
-                <div>
-                  <label class="block text-xs font-medium mb-1">Port</label>
-                  <input
-                    type="text"
-                    bind:value={sshPort}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="22"
-                  />
-                </div>
-
-                <div>
-                  <label class="block text-xs font-medium mb-1">Username</label>
-                  <input
-                    type="text"
-                    bind:value={sshUsername}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="root"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-xs font-medium mb-1">Authentication</label>
-                <select
-                  bind:value={sshAuthMethod}
-                  class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                >
-                  <option value="password">Password</option>
-                  <option value="key">SSH Key</option>
-                </select>
-              </div>
-
-              {#if sshAuthMethod === 'password'}
-                <div>
-                  <label class="block text-xs font-medium mb-1">Password</label>
-                  <input
-                    type="password"
-                    bind:value={sshPassword}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="••••••••"
-                  />
-                </div>
-              {:else}
-                <div>
-                  <label class="block text-xs font-medium mb-1">Key Path</label>
-                  <input
-                    type="text"
-                    bind:value={sshKeyPath}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="~/.ssh/id_rsa"
-                  />
-                  <p class="text-xs text-gray-500 mt-1">Path to your private key file</p>
-                </div>
-              {/if}
-
-              <p class="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-600">
-                💡 Tip: Leave fields empty to inherit values from the parent folder
-              </p>
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-600">
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium transition-colors {activeTab === 'connection' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}"
+                onclick={() => activeTab = 'connection'}
+              >
+                Connection
+              </button>
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium transition-colors {activeTab === 'session' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}"
+                onclick={() => activeTab = 'session'}
+              >
+                Session
+              </button>
             </div>
+
+            <!-- Tab Content -->
+            {#if activeTab === 'connection'}
+              <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-sm font-medium text-blue-400">SSH Connection</h4>
+                  <p class="text-xs text-gray-400">* Only host is required</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="col-span-2">
+                    <label class="block text-xs font-medium mb-1">Host *</label>
+                    <input
+                      type="text"
+                      bind:value={sshHost}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="192.168.1.100 or example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Port</label>
+                    <input
+                      type="text"
+                      bind:value={sshPort}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="22"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Username</label>
+                    <input
+                      type="text"
+                      bind:value={sshUsername}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="root"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium mb-1">Authentication</label>
+                  <select
+                    bind:value={sshAuthMethod}
+                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="password">Password</option>
+                    <option value="key">SSH Key</option>
+                  </select>
+                </div>
+
+                {#if sshAuthMethod === 'password'}
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Password</label>
+                    <input
+                      type="password"
+                      bind:value={sshPassword}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                {:else}
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Key Path</label>
+                    <input
+                      type="text"
+                      bind:value={sshKeyPath}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="~/.ssh/id_rsa"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">Path to your private key file</p>
+                  </div>
+                {/if}
+
+                <p class="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-600">
+                  💡 Tip: Leave fields empty to inherit values from the parent folder
+                </p>
+              </div>
+            {:else if activeTab === 'session'}
+              <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+                <h4 class="text-sm font-medium text-purple-400">Session Configuration</h4>
+
+                <div>
+                  <label class="block text-xs font-medium mb-1">Working Directory</label>
+                  <input
+                    type="text"
+                    bind:value={workingDirectory}
+                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                    placeholder="~/projects or /home/user"
+                  />
+                  <p class="text-xs text-gray-500 mt-1">Directory where the session will start (supports ~)</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium mb-1">Startup Commands</label>
+                  <textarea
+                    bind:value={startupCommands}
+                    rows="2"
+                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
+                    placeholder="cd ~/project; source .env"
+                  ></textarea>
+                  <p class="text-xs text-gray-500 mt-1">Commands to run when session starts (separated by semicolons)</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium mb-1">Environment Variables</label>
+                  <textarea
+                    bind:value={environmentVariables}
+                    rows="2"
+                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
+                    placeholder="KEY1=value1; KEY2=value2"
+                  ></textarea>
+                  <p class="text-xs text-gray-500 mt-1">Environment variables (KEY=value; separated by semicolons)</p>
+                </div>
+
+                <p class="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-600">
+                  💡 Tip: Leave fields empty to inherit values from the parent folder
+                </p>
+              </div>
+            {/if}
           {/if}
 
           {#if sessionType === 'rdp'}
-            <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
-              <h4 class="text-sm font-medium text-cyan-400">RDP Connection</h4>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div class="col-span-2">
-                  <label class="block text-xs font-medium mb-1">Host *</label>
-                  <input
-                    type="text"
-                    bind:value={rdpHost}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="192.168.1.100 or windows-server.local"
-                  />
-                </div>
-
-                <div>
-                  <label class="block text-xs font-medium mb-1">Port</label>
-                  <input
-                    type="text"
-                    bind:value={rdpPort}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="3389"
-                  />
-                </div>
-
-                <div>
-                  <label class="block text-xs font-medium mb-1">Security</label>
-                  <select
-                    bind:value={rdpSecurity}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="any">Any</option>
-                    <option value="nla">NLA</option>
-                    <option value="tls">TLS</option>
-                    <option value="rdp">RDP</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-medium mb-1">Username</label>
-                  <input
-                    type="text"
-                    bind:value={rdpUsername}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="administrator"
-                  />
-                </div>
-
-                <div>
-                  <label class="block text-xs font-medium mb-1">Password</label>
-                  <input
-                    type="password"
-                    bind:value={rdpPassword}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="••••••••"
-                  />
-                </div>
-
-                <div class="col-span-2">
-                  <label class="block text-xs font-medium mb-1">Domain (Optional)</label>
-                  <input
-                    type="text"
-                    bind:value={rdpDomain}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="CORP or corp.local"
-                  />
-                </div>
-              </div>
-
-              <div class="grid grid-cols-3 gap-3 pt-2 border-t border-gray-600">
-                <div>
-                  <label class="block text-xs font-medium mb-1">Width</label>
-                  <input
-                    type="text"
-                    bind:value={desktopWidth}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="1920"
-                  />
-                </div>
-                <div>
-                  <label class="block text-xs font-medium mb-1">Height</label>
-                  <input
-                    type="text"
-                    bind:value={desktopHeight}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="1080"
-                  />
-                </div>
-                <div>
-                  <label class="block text-xs font-medium mb-1">Color Depth</label>
-                  <select
-                    bind:value={desktopColorDepth}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="8">8-bit</option>
-                    <option value="16">16-bit</option>
-                    <option value="24">24-bit</option>
-                    <option value="32">32-bit</option>
-                  </select>
-                </div>
-              </div>
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-600">
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium transition-colors {activeTab === 'connection' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}"
+                onclick={() => activeTab = 'connection'}
+              >
+                Connection
+              </button>
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium transition-colors {activeTab === 'display' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}"
+                onclick={() => activeTab = 'display'}
+              >
+                Display
+              </button>
             </div>
+
+            <!-- Tab Content -->
+            {#if activeTab === 'connection'}
+              <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+                <h4 class="text-sm font-medium text-cyan-400">RDP Connection</h4>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="col-span-2">
+                    <label class="block text-xs font-medium mb-1">Host *</label>
+                    <input
+                      type="text"
+                      bind:value={rdpHost}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="192.168.1.100 or windows-server.local"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Port</label>
+                    <input
+                      type="text"
+                      bind:value={rdpPort}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="3389"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Security</label>
+                    <select
+                      bind:value={rdpSecurity}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="any">Any</option>
+                      <option value="nla">NLA</option>
+                      <option value="tls">TLS</option>
+                      <option value="rdp">RDP</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Username</label>
+                    <input
+                      type="text"
+                      bind:value={rdpUsername}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="administrator"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Password</label>
+                    <input
+                      type="password"
+                      bind:value={rdpPassword}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="••••••••"
+                    />
+                  </div>
+
+                  <div class="col-span-2">
+                    <label class="block text-xs font-medium mb-1">Domain (Optional)</label>
+                    <input
+                      type="text"
+                      bind:value={rdpDomain}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="CORP or corp.local"
+                    />
+                  </div>
+                </div>
+              </div>
+            {:else if activeTab === 'display'}
+              <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+                <h4 class="text-sm font-medium text-cyan-400">Display Settings</h4>
+
+                <div class="grid grid-cols-3 gap-3">
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Width</label>
+                    <input
+                      type="text"
+                      bind:value={desktopWidth}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="1920"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Height</label>
+                    <input
+                      type="text"
+                      bind:value={desktopHeight}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="1080"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Color Depth</label>
+                    <select
+                      bind:value={desktopColorDepth}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="8">8-bit</option>
+                      <option value="16">16-bit</option>
+                      <option value="24">24-bit</option>
+                      <option value="32">32-bit</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            {/if}
           {/if}
 
           {#if sessionType === 'vnc'}
-            <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
-              <h4 class="text-sm font-medium text-green-400">VNC Connection</h4>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div class="col-span-2">
-                  <label class="block text-xs font-medium mb-1">Host *</label>
-                  <input
-                    type="text"
-                    bind:value={vncHost}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="192.168.1.100 or vnc-server.local"
-                  />
-                </div>
-
-                <div>
-                  <label class="block text-xs font-medium mb-1">Port</label>
-                  <input
-                    type="text"
-                    bind:value={vncPort}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="5900"
-                  />
-                </div>
-
-                <div>
-                  <label class="block text-xs font-medium mb-1">Password</label>
-                  <input
-                    type="password"
-                    bind:value={vncPassword}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="••••••••"
-                  />
-                </div>
-              </div>
-
-              <div class="grid grid-cols-3 gap-3 pt-2 border-t border-gray-600">
-                <div>
-                  <label class="block text-xs font-medium mb-1">Width</label>
-                  <input
-                    type="text"
-                    bind:value={desktopWidth}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="1920"
-                  />
-                </div>
-                <div>
-                  <label class="block text-xs font-medium mb-1">Height</label>
-                  <input
-                    type="text"
-                    bind:value={desktopHeight}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                    placeholder="1080"
-                  />
-                </div>
-                <div>
-                  <label class="block text-xs font-medium mb-1">Color Depth</label>
-                  <select
-                    bind:value={desktopColorDepth}
-                    class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="8">8-bit</option>
-                    <option value="16">16-bit</option>
-                    <option value="24">24-bit</option>
-                    <option value="32">32-bit</option>
-                  </select>
-                </div>
-              </div>
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-600">
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium transition-colors {activeTab === 'connection' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}"
+                onclick={() => activeTab = 'connection'}
+              >
+                Connection
+              </button>
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium transition-colors {activeTab === 'display' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}"
+                onclick={() => activeTab = 'display'}
+              >
+                Display
+              </button>
             </div>
+
+            <!-- Tab Content -->
+            {#if activeTab === 'connection'}
+              <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+                <h4 class="text-sm font-medium text-green-400">VNC Connection</h4>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="col-span-2">
+                    <label class="block text-xs font-medium mb-1">Host *</label>
+                    <input
+                      type="text"
+                      bind:value={vncHost}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="192.168.1.100 or vnc-server.local"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Port</label>
+                    <input
+                      type="text"
+                      bind:value={vncPort}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="5900"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Password</label>
+                    <input
+                      type="password"
+                      bind:value={vncPassword}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+              </div>
+            {:else if activeTab === 'display'}
+              <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+                <h4 class="text-sm font-medium text-green-400">Display Settings</h4>
+
+                <div class="grid grid-cols-3 gap-3">
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Width</label>
+                    <input
+                      type="text"
+                      bind:value={desktopWidth}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="1920"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Height</label>
+                    <input
+                      type="text"
+                      bind:value={desktopHeight}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="1080"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Color Depth</label>
+                    <select
+                      bind:value={desktopColorDepth}
+                      class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="8">8-bit</option>
+                      <option value="16">16-bit</option>
+                      <option value="24">24-bit</option>
+                      <option value="32">32-bit</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            {/if}
           {/if}
 
           {#if sessionType === 'telnet'}
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-600">
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium text-blue-400 border-b-2 border-blue-400"
+              >
+                Connection
+              </button>
+            </div>
+
+            <!-- Tab Content -->
             <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
               <h4 class="text-sm font-medium text-orange-400">Telnet Connection</h4>
 
@@ -628,47 +761,58 @@
           {/if}
 
           <!-- General session configuration (for terminal session types only) -->
-          {#if !['rdp', 'vnc', 'telnet'].includes(sessionType)}
-          <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
-            <h4 class="text-sm font-medium text-purple-400">Session Configuration</h4>
-
-            <div>
-              <label class="block text-xs font-medium mb-1">Working Directory</label>
-              <input
-                type="text"
-                bind:value={workingDirectory}
-                class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                placeholder="~/projects or /home/user"
-              />
-              <p class="text-xs text-gray-500 mt-1">Directory where the session will start (supports ~)</p>
+          {#if !['ssh', 'rdp', 'vnc', 'telnet'].includes(sessionType)}
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-600">
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium text-blue-400 border-b-2 border-blue-400"
+              >
+                Session
+              </button>
             </div>
 
-            <div>
-              <label class="block text-xs font-medium mb-1">Startup Commands</label>
-              <textarea
-                bind:value={startupCommands}
-                rows="2"
-                class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
-                placeholder="cd ~/project; source .env"
-              ></textarea>
-              <p class="text-xs text-gray-500 mt-1">Commands to run when session starts (separated by semicolons)</p>
-            </div>
+            <!-- Tab Content -->
+            <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
+              <h4 class="text-sm font-medium text-purple-400">Session Configuration</h4>
 
-            <div>
-              <label class="block text-xs font-medium mb-1">Environment Variables</label>
-              <textarea
-                bind:value={environmentVariables}
-                rows="2"
-                class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
-                placeholder="KEY1=value1; KEY2=value2"
-              ></textarea>
-              <p class="text-xs text-gray-500 mt-1">Environment variables (KEY=value; separated by semicolons)</p>
-            </div>
+              <div>
+                <label class="block text-xs font-medium mb-1">Working Directory</label>
+                <input
+                  type="text"
+                  bind:value={workingDirectory}
+                  class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                  placeholder="~/projects or /home/user"
+                />
+                <p class="text-xs text-gray-500 mt-1">Directory where the session will start (supports ~)</p>
+              </div>
 
-            <p class="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-600">
-              💡 Tip: Leave fields empty to inherit values from the parent folder
-            </p>
-          </div>
+              <div>
+                <label class="block text-xs font-medium mb-1">Startup Commands</label>
+                <textarea
+                  bind:value={startupCommands}
+                  rows="2"
+                  class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
+                  placeholder="cd ~/project; source .env"
+                ></textarea>
+                <p class="text-xs text-gray-500 mt-1">Commands to run when session starts (separated by semicolons)</p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium mb-1">Environment Variables</label>
+                <textarea
+                  bind:value={environmentVariables}
+                  rows="2"
+                  class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
+                  placeholder="KEY1=value1; KEY2=value2"
+                ></textarea>
+                <p class="text-xs text-gray-500 mt-1">Environment variables (KEY=value; separated by semicolons)</p>
+              </div>
+
+              <p class="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-600">
+                💡 Tip: Leave fields empty to inherit values from the parent folder
+              </p>
+            </div>
           {/if}
         {/if}
       </div>
