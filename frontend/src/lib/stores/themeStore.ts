@@ -147,6 +147,28 @@ function createThemeStore() {
       // Store terminal colors for terminal instances
       root.setAttribute('data-theme-type', theme.type);
       root.setAttribute('data-theme-id', theme.id);
+
+      // Also expose terminal palette as CSS variables for styling wrappers/previews
+      root.style.setProperty('--term-background', theme.terminal.background);
+      root.style.setProperty('--term-foreground', theme.terminal.foreground);
+      root.style.setProperty('--term-cursor', theme.terminal.cursor);
+      root.style.setProperty('--term-selection', theme.terminal.selectionBackground);
+      root.style.setProperty('--term-black', theme.terminal.black);
+      root.style.setProperty('--term-red', theme.terminal.red);
+      root.style.setProperty('--term-green', theme.terminal.green);
+      root.style.setProperty('--term-yellow', theme.terminal.yellow);
+      root.style.setProperty('--term-blue', theme.terminal.blue);
+      root.style.setProperty('--term-magenta', theme.terminal.magenta);
+      root.style.setProperty('--term-cyan', theme.terminal.cyan);
+      root.style.setProperty('--term-white', theme.terminal.white);
+      root.style.setProperty('--term-bright-black', theme.terminal.brightBlack);
+      root.style.setProperty('--term-bright-red', theme.terminal.brightRed);
+      root.style.setProperty('--term-bright-green', theme.terminal.brightGreen);
+      root.style.setProperty('--term-bright-yellow', theme.terminal.brightYellow);
+      root.style.setProperty('--term-bright-blue', theme.terminal.brightBlue);
+      root.style.setProperty('--term-bright-magenta', theme.terminal.brightMagenta);
+      root.style.setProperty('--term-bright-cyan', theme.terminal.brightCyan);
+      root.style.setProperty('--term-bright-white', theme.terminal.brightWhite);
     },
 
     // Import a theme from file

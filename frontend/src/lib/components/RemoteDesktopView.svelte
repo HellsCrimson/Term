@@ -299,7 +299,7 @@
   }
 </script>
 
-<div class="desktop-wrapper h-full bg-[#1a1b26] flex flex-col overflow-hidden">
+<div class="desktop-wrapper h-full flex flex-col overflow-hidden" style="background: var(--bg-primary)">
   <div class="desktop-container flex-1 flex items-center justify-center" bind:this={displayElement}></div>
   <StatusBar />
 </div>

@@ -138,7 +138,7 @@
   });
 </script>
 
-<div class="flex bg-gray-800 border-b border-gray-700 overflow-x-auto">
+<div class="flex overflow-x-auto" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color)">
   {#each tabs as tab (tab.id)}
     <div
       class="terminal-tab {tab.active ? 'active' : ''} {tab.exited ? 'exited' : ''}"
@@ -154,7 +154,8 @@
         <input
           type="text"
           bind:value={newTabName}
-          class="flex-1 px-2 py-0.5 text-sm bg-gray-700 border border-blue-500 rounded focus:outline-none min-w-24"
+          class="flex-1 px-2 py-0.5 text-sm rounded focus:outline-none min-w-24 border"
+          style="background: var(--bg-tertiary); border-color: var(--accent-blue)"
           onblur={finishRename}
           onkeydown={(e) => {
             if (e.key === 'Enter') {
@@ -181,7 +182,7 @@
 
       {#if !tab.pinned}
         <button
-          class="ml-2 hover:bg-gray-600 rounded p-0.5"
+          class="ml-2 rounded p-0.5 hover:bg-[var(--hover-bg)]"
           onclick={(e) => handleTabClose(e, tab)}
           aria-label="Close tab"
         >

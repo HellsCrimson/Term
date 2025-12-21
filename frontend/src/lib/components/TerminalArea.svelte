@@ -16,7 +16,7 @@
   }
 </script>
 
-<div class="flex flex-col h-full bg-gray-900">
+<div class="flex flex-col h-full" style="background: var(--bg-primary)">
   {#if tabs.length > 0}
     <!-- Tab Bar -->
     <TabBar />
@@ -37,7 +37,7 @@
     </div>
   {:else}
     <!-- Empty State -->
-    <div class="flex flex-col items-center justify-center h-full text-gray-500">
+    <div class="flex flex-col items-center justify-center h-full" style="color: var(--text-muted)">
       <svg
         class="w-24 h-24 mb-4"
         fill="none"

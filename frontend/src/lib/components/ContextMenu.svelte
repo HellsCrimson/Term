@@ -62,15 +62,16 @@
 {#if show}
   <div
     bind:this={menuElement}
-    class="fixed bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-48 z-50"
-    style="left: {x}px; top: {y}px;"
+    class="fixed rounded-lg shadow-xl py-1 min-w-48 z-50"
+    style="left: {x}px; top: {y}px; background: var(--bg-secondary); border: 1px solid var(--border-color)"
   >
     {#each items as item}
       {#if item.separator}
-        <div class="h-px bg-gray-600 my-1"></div>
+        <div class="h-px my-1" style="background: var(--border-color)"></div>
       {:else}
         <div
-          class="px-4 py-2 hover:bg-gray-700 cursor-pointer flex items-center gap-2 {item.disabled ? 'opacity-50 cursor-not-allowed' : ''} {item.danger ? 'text-red-400 hover:bg-red-900/30' : ''}"
+          class="px-4 py-2 cursor-pointer flex items-center gap-2 hover:bg-[var(--hover-bg)] {item.disabled ? 'opacity-50 cursor-not-allowed' : ''} {item.danger ? 'text-red-400' : ''}"
+          style="color: var(--text-primary)"
           onclick={() => handleItemClick(item)}
           onkeydown={(e) => handleKeyDown(e, item)}
           role="menuitem"

@@ -213,31 +213,33 @@
 </script>
 
 {#if !ready}
-  <div class="flex items-center justify-center h-screen bg-gray-900 text-white">
+  <div class="flex items-center justify-center h-screen" style="background: var(--bg-primary); color: var(--text-primary)">
     <p>Loading...</p>
   </div>
 {:else}
-  <div class="flex h-screen w-screen overflow-hidden bg-gray-900 text-gray-100">
+  <div class="flex h-screen w-screen overflow-hidden" style="background: var(--bg-primary); color: var(--text-primary)">
     <!-- Sidebar -->
     <div
-      class="flex-shrink-0 bg-gray-800 border-r border-gray-700 overflow-hidden"
-      style="width: {sidebarWidth}px"
+      class="flex-shrink-0 overflow-hidden"
+      style="background: var(--bg-secondary); border-right: 1px solid var(--border-color) width: {sidebarWidth}px"
     >
       <div class="h-full flex flex-col">
         <!-- Sidebar Header -->
-        <div class="px-4 py-3 border-b border-gray-700 flex flex-col gap-1">
+        <div class="px-4 py-3 flex flex-col gap-1" style="border-bottom: 1px solid var(--border-color)">
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold">Sessions</h2>
             <div class="flex gap-2">
               <button
-                class="px-2 py-1 text-sm bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                class="px-2 py-1 text-sm rounded transition-colors text-white"
+                style="background: var(--accent-blue)"
                 onclick={() => showNewSessionDialog = true}
                 aria-label="Create new session or folder"
               >
                 + New
               </button>
               <button
-                class="px-2 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+                class="px-2 py-1 text-sm rounded transition-colors"
+                style="background: var(--bg-tertiary)"
                 onclick={() => showSettingsDialog = true}
                 aria-label="Open settings"
                 title="Settings"
@@ -247,11 +249,11 @@
             </div>
           </div>
           {#if lastKeyPressed}
-            <div class="text-xs text-gray-400">
+            <div class="text-xs" style="color: var(--text-muted)">
               Last key: {lastKeyPressed}
             </div>
           {/if}
-          <div class="text-xs text-gray-500">
+          <div class="text-xs" style="color: var(--text-muted)">
             Restore: {settingsStore.settings.restoreTabsOnStartup ? 'ON' : 'OFF'} |
             Confirm: {settingsStore.settings.confirmTabClose ? 'ON' : 'OFF'}
           </div>
@@ -268,7 +270,8 @@
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
-      class="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
+      class="w-1 cursor-col-resize transition-colors"
+      style="background: var(--border-color)"
       onmousedown={handleMouseDown}
       onkeydown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {

@@ -19,6 +19,10 @@
   let confirmTabClose = $state(settingsStore.settings.confirmTabClose);
   let showStatusBar = $state(settingsStore.settings.showStatusBar);
   let saving = $state(false);
+  // Theme import/export helpers
+  let importPath = $state('');
+  let exportPath = $state('');
+  let exporting = $state(false);
 
   // Update local state when settings change (but not while saving)
   $effect(() => {
@@ -106,7 +110,8 @@
 
 {#if show}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-gray-800 rounded-lg p-6 w-[500px] max-h-[80vh] overflow-y-auto border border-gray-700">
+    <div class="rounded-lg p-6 w-[560px] max-h-[80vh] overflow-y-auto"
+         style="background: var(--bg-secondary); border: 1px solid var(--border-color)">
       <h2 class="text-2xl font-semibold mb-6">Settings</h2>
 
       <div class="space-y-6">
@@ -119,7 +124,8 @@
               <select
                 id="selected_theme"
                 bind:value={selectedThemeId}
-                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                class="w-full px-3 py-2 rounded focus:outline-none border"
+                style="background: var(--bg-tertiary); border-color: var(--border-color)"
               >
                 {#each $themeStore.themes as themeOption}
                   <option value={themeOption.id}>
@@ -127,11 +133,73 @@
                   </option>
                 {/each}
               </select>
-              <p class="text-xs text-gray-400 mt-1">
+              <p class="text-xs" style="color: var(--text-muted)">
                 {#if $themeStore.activeTheme}
                   Currently active: {$themeStore.activeTheme.name}
                 {/if}
               </p>
+            </div>
+
+            <!-- Theme preview -->
+            {#if $themeStore.activeTheme}
+              <div class="mt-3">
+                <div class="text-xs mb-1" style="color: var(--text-muted)">Preview</div>
+                <div class="grid grid-cols-8 gap-1 p-2 rounded"
+                     style="background: var(--bg-tertiary); border: 1px solid var(--border-color)">
+                  <div class="h-5 rounded" style="background: var(--term-black)" title="black"></div>
+                  <div class="h-5 rounded" style="background: var(--term-red)" title="red"></div>
+                  <div class="h-5 rounded" style="background: var(--term-green)" title="green"></div>
+                  <div class="h-5 rounded" style="background: var(--term-yellow)" title="yellow"></div>
+                  <div class="h-5 rounded" style="background: var(--term-blue)" title="blue"></div>
+                  <div class="h-5 rounded" style="background: var(--term-magenta)" title="magenta"></div>
+                  <div class="h-5 rounded" style="background: var(--term-cyan)" title="cyan"></div>
+                  <div class="h-5 rounded" style="background: var(--term-white)" title="white"></div>
+                  <div class="h-5 rounded" style="background: var(--term-bright-black)" title="brightBlack"></div>
+                  <div class="h-5 rounded" style="background: var(--term-bright-red)" title="brightRed"></div>
+                  <div class="h-5 rounded" style="background: var(--term-bright-green)" title="brightGreen"></div>
+                  <div class="h-5 rounded" style="background: var(--term-bright-yellow)" title="brightYellow"></div>
+                  <div class="h-5 rounded" style="background: var(--term-bright-blue)" title="brightBlue"></div>
+                  <div class="h-5 rounded" style="background: var(--term-bright-magenta)" title="brightMagenta"></div>
+                  <div class="h-5 rounded" style="background: var(--term-bright-cyan)" title="brightCyan"></div>
+                  <div class="h-5 rounded" style="background: var(--term-bright-white)" title="brightWhite"></div>
+                </div>
+              </div>
+            {/if}
+
+            <!-- Import/Export themes -->
+            <div class="mt-4 space-y-3">
+              <div>
+                <label class="block text-sm font-medium mb-1">Import theme from JSON</label>
+                <div class="flex gap-2">
+                  <input type="text" bind:value={importPath}
+                         placeholder="/path/to/theme.json"
+                         class="flex-1 px-3 py-2 rounded border focus:outline-none"
+                         style="background: var(--bg-tertiary); border-color: var(--border-color)" />
+                  <button class="px-3 py-2 rounded text-white"
+                          style="background: var(--accent-green)"
+                          onclick={async () => { if (!importPath) return; await themeStore.importTheme(importPath); }}>
+                    Import
+                  </button>
+                </div>
+                <p class="text-xs mt-1" style="color: var(--text-muted)">
+                  You can also add custom themes in ~/.config/term/themes/
+                </p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Export current theme</label>
+                <div class="flex gap-2">
+                  <input type="text" bind:value={exportPath}
+                         placeholder="/path/to/save/theme.json"
+                         class="flex-1 px-3 py-2 rounded border focus:outline-none"
+                         style="background: var(--bg-tertiary); border-color: var(--border-color)" />
+                  <button class="px-3 py-2 rounded text-white disabled:opacity-60"
+                          style="background: var(--accent-blue)"
+                          disabled={exporting || !$themeStore.activeTheme}
+                          onclick={async () => { if (!exportPath || !$themeStore.activeTheme) return; exporting = true; try { await themeStore.exportTheme($themeStore.activeTheme.id, exportPath); } finally { exporting = false; } }}>
+                    Export
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -145,8 +213,8 @@
               <select
                 id="font_family"
                 bind:value={fontFamily}
-                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                style="font-family: {fontFamily}"
+                class="w-full px-3 py-2 rounded focus:outline-none border"
+                style="background: var(--bg-tertiary); border-color: var(--border-color) font-family: {fontFamily}"
               >
                 {#each fontFamilies as font}
                   <option value={font.value} style="font-family: {font.value}">
@@ -154,10 +222,10 @@
                   </option>
                 {/each}
               </select>
-              <p class="text-xs text-gray-400 mt-1">
+              <p class="text-xs mt-1" style="color: var(--text-muted)">
                 Font preview: <span style="font-family: {fontFamily}">The quick brown fox   󰜴 0O1lI</span>
               </p>
-              <p class="text-xs text-gray-500 mt-2">
+              <p class="text-xs mt-2" style="color: var(--text-muted)">
                 💡 Nerd Fonts include powerline symbols and icons for oh-my-zsh, powerlevel10k, etc.
                 <br />
                 Download from <a href="https://www.nerdfonts.com/" class="text-blue-400 hover:underline" onclick={(e) => { e.preventDefault(); }}>nerdfonts.com</a>
@@ -177,7 +245,7 @@
                 step="1"
                 class="w-full"
               />
-              <div class="flex justify-between text-xs text-gray-400 mt-1">
+              <div class="flex justify-between text-xs mt-1" style="color: var(--text-muted)">
                 <span>8px</span>
                 <span>24px</span>
               </div>
@@ -193,7 +261,7 @@
               <div>
                 <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="block text-sm font-medium">Auto-launch tabs</label>
-                <p class="text-xs text-gray-400">
+                <p class="text-xs" style="color: var(--text-muted)">
                   Automatically open a terminal tab when selecting a session
                 </p>
               </div>
@@ -213,7 +281,7 @@
               <div>
                 <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="block text-sm font-medium">Restore tabs on startup</label>
-                <p class="text-xs text-gray-400">
+                <p class="text-xs" style="color: var(--text-muted)">
                   Automatically restore previously open tabs when app starts
                 </p>
               </div>
@@ -233,7 +301,7 @@
               <div>
                 <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="block text-sm font-medium">Confirm tab close</label>
-                <p class="text-xs text-gray-400">
+                <p class="text-xs" style="color: var(--text-muted)">
                   Show confirmation dialog when closing active tabs
                 </p>
               </div>
@@ -253,7 +321,7 @@
               <div>
                 <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="block text-sm font-medium">Show status bar</label>
-                <p class="text-xs text-gray-400">
+                <p class="text-xs" style="color: var(--text-muted)">
                   Display system resource monitoring bar (CPU, RAM, Disk, Network)
                 </p>
               </div>
@@ -272,16 +340,18 @@
         </div>
       </div>
 
-      <div class="flex gap-2 mt-6 pt-6 border-t border-gray-700">
+      <div class="flex gap-2 mt-6 pt-6" style="border-top: 1px solid var(--border-color)">
         <button
           onclick={handleSave}
-          class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium transition-colors"
+          class="flex-1 px-4 py-2 rounded font-medium transition-colors text-white"
+          style="background: var(--accent-blue)"
         >
           Save
         </button>
         <button
           onclick={handleCancel}
-          class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded font-medium transition-colors"
+          class="flex-1 px-4 py-2 rounded font-medium transition-colors"
+          style="background: var(--bg-tertiary)"
         >
           Cancel
         </button>

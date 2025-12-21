@@ -82,18 +82,20 @@
 
 <div class="session-tree flex flex-col h-full">
   <!-- Search input -->
-  <div class="p-2 border-b border-gray-700">
+  <div class="p-2" style="border-bottom: 1px solid var(--border-color)">
     <div class="relative">
       <input
         type="text"
         bind:value={searchQuery}
         placeholder="Search sessions..."
-        class="w-full px-3 py-1.5 pr-8 bg-gray-700 border border-gray-600 rounded text-sm focus:outline-none focus:border-blue-500"
+        class="w-full px-3 py-1.5 pr-8 rounded text-sm focus:outline-none border"
+        style="background: var(--bg-tertiary); border-color: var(--border-color)"
       />
       {#if searchQuery}
         <button
           onclick={clearSearch}
-          class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+          class="absolute right-2 top-1/2 -translate-y-1/2"
+          style="color: var(--text-muted)"
           aria-label="Clear search"
         >
           ✕
@@ -105,12 +107,12 @@
   <!-- Session tree -->
   <div class="flex-1 overflow-y-auto p-2">
     {#if tree.length === 0}
-      <div class="text-gray-500 text-sm p-4 text-center">
+      <div class="text-sm p-4 text-center" style="color: var(--text-muted)">
         No sessions available.<br />
         <button class="text-blue-500 hover:underline mt-2">Create your first session</button>
       </div>
     {:else if filteredTree.length === 0}
-      <div class="text-gray-500 text-sm p-4 text-center">
+      <div class="text-sm p-4 text-center" style="color: var(--text-muted)">
         No sessions match "{searchQuery}"
       </div>
     {:else}

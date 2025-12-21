@@ -70,14 +70,14 @@
 </script>
 
 {#if settingsStore.settings.showStatusBar}
-<div class="status-bar bg-gray-800 border-t border-gray-700 px-4 py-1.5 flex items-center gap-6 text-xs font-mono">
+<div class="status-bar px-4 py-1.5 flex items-center gap-6 text-xs font-mono" style="background: var(--bg-secondary); border-top: 1px solid var(--border-color)">
   <!-- CPU -->
   <div class="flex items-center gap-2">
-    <span class="text-gray-400">CPU:</span>
+    <span style="color: var(--text-muted)">CPU:</span>
     <span class="{getUsageColor(stats.cpuPercent)} font-semibold">
       {stats.cpuPercent.toFixed(1)}%
     </span>
-    <div class="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+    <div class="w-16 h-2 rounded-full overflow-hidden" style="background: var(--bg-tertiary)">
       <div
         class="h-full transition-all duration-300 {stats.cpuPercent < 50 ? 'bg-green-500' : stats.cpuPercent < 75 ? 'bg-yellow-500' : 'bg-red-500'}"
         style="width: {Math.min(stats.cpuPercent, 100)}%"
@@ -87,14 +87,14 @@
 
   <!-- Memory -->
   <div class="flex items-center gap-2">
-    <span class="text-gray-400">RAM:</span>
+    <span style="color: var(--text-muted)">RAM:</span>
     <span class="{getUsageColor(stats.memoryPercent)} font-semibold">
       {stats.memoryPercent.toFixed(1)}%
     </span>
-    <span class="text-gray-500">
+    <span style="color: var(--text-muted)">
       ({formatBytes(stats.memoryUsed)} / {formatBytes(stats.memoryTotal)})
     </span>
-    <div class="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+    <div class="w-16 h-2 rounded-full overflow-hidden" style="background: var(--bg-tertiary)">
       <div
         class="h-full transition-all duration-300 {stats.memoryPercent < 50 ? 'bg-green-500' : stats.memoryPercent < 75 ? 'bg-yellow-500' : 'bg-red-500'}"
         style="width: {Math.min(stats.memoryPercent, 100)}%"
@@ -104,14 +104,14 @@
 
   <!-- Disk -->
   <div class="flex items-center gap-2">
-    <span class="text-gray-400">Disk:</span>
+    <span style="color: var(--text-muted)">Disk:</span>
     <span class="{getUsageColor(stats.diskPercent)} font-semibold">
       {stats.diskPercent.toFixed(1)}%
     </span>
-    <span class="text-gray-500">
+    <span style="color: var(--text-muted)">
       ({formatBytes(stats.diskUsed)} / {formatBytes(stats.diskTotal)})
     </span>
-    <div class="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+    <div class="w-16 h-2 rounded-full overflow-hidden" style="background: var(--bg-tertiary)">
       <div
         class="h-full transition-all duration-300 {stats.diskPercent < 50 ? 'bg-green-500' : stats.diskPercent < 75 ? 'bg-yellow-500' : 'bg-red-500'}"
         style="width: {Math.min(stats.diskPercent, 100)}%"
@@ -121,25 +121,25 @@
 
   <!-- Network -->
   <div class="flex items-center gap-2">
-    <span class="text-gray-400">Net:</span>
-    <span class="text-blue-400">
+    <span style="color: var(--text-muted)">Net:</span>
+    <span style="color: var(--accent-blue)">
       ↓ {formatRate(stats.networkRecv)}
     </span>
-    <span class="text-purple-400">
+    <span style="color: var(--accent-purple)">
       ↑ {formatRate(stats.networkSent)}
     </span>
   </div>
 
   <!-- Load Average -->
   <div class="flex items-center gap-2">
-    <span class="text-gray-400">Load:</span>
-    <span class="text-cyan-400">
+    <span style="color: var(--text-muted)">Load:</span>
+    <span style="color: var(--accent-cyan)">
       {stats.loadAvg1.toFixed(2)}
     </span>
-    <span class="text-gray-500">
+    <span style="color: var(--text-muted)">
       {stats.loadAvg5.toFixed(2)}
     </span>
-    <span class="text-gray-600">
+    <span style="color: var(--text-secondary)">
       {stats.loadAvg15.toFixed(2)}
     </span>
   </div>
