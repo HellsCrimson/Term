@@ -1,6 +1,7 @@
 <script lang="ts">
   import { settingsStore } from '../stores/settings.svelte';
   import { themeStore } from '../stores/themeStore';
+  import { Browser } from '@wailsio/runtime'
 
   interface Props {
     show: boolean;
@@ -234,7 +235,10 @@
               <p class="text-xs mt-2" style="color: var(--text-muted)">
                 💡 Nerd Fonts include powerline symbols and icons for oh-my-zsh, powerlevel10k, etc.
                 <br />
-                Download from <a href="https://www.nerdfonts.com/" class="text-blue-400 hover:underline" onclick={(e) => { e.preventDefault(); }}>nerdfonts.com</a>
+                Download from <a href="https://www.nerdfonts.com/" class="text-blue-400 hover:underline" onclick={(e) => {
+                  e.preventDefault();
+                  Browser.OpenURL('https://www.nerdfonts.com/');
+                }}>nerdfonts.com</a>
               </p>
             </div>
 

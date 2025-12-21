@@ -83,8 +83,8 @@ func main() {
 	remoteStatsService.Start()
 
 	// Create Guacamole service and HTTP server
-	guacService := NewGuacamoleService(sessionService)
-	httpServer := NewHTTPServer(3000, guacService)
+    guacService := NewGuacamoleService(sessionService)
+    httpServer := NewHTTPServer(3000, guacService, terminalService)
 	if err := httpServer.Start(); err != nil {
 		log.Printf("Failed to start HTTP server: %v", err)
 	}

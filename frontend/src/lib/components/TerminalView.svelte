@@ -7,6 +7,7 @@
   import { settingsStore } from '../stores/settings.svelte';
   import { themeStore } from '../stores/themeStore';
   import StatusBar from './StatusBar.svelte';
+  import RemoteFileBrowser from './RemoteFileBrowser.svelte';
 
   interface Props {
     tab: TerminalTab;
@@ -19,6 +20,7 @@
   let fitAddon: FitAddon | null = null;
   let resizeObserver: ResizeObserver | null = null;
   let currentFontSize = $state(settingsStore.settings.fontSize);
+  let showFileOverlay = $state(false);
 
   // Focus terminal when tab becomes active
   $effect(() => {
@@ -231,7 +233,39 @@
   });
 </script>
 
-<div class="terminal-wrapper h-full flex flex-col" style="background: var(--term-background)">
+<div class="terminal-wrapper h-full flex flex-col relative" style="background: var(--term-background)">
+  <!-- Floating actions -->
+  {#if tab.sessionType === 'ssh'}
+    <div class="absolute right-2 top-2 flex gap-2 z-20">
+      <button
+        class="px-2 py-1 text-xs rounded text-white"
+        style="background: var(--accent-blue)"
+        aria-label="Toggle remote files"
+        onclick={() => showFileOverlay = true}
+      >
+        Files
+      </button>
+    </div>
+  {/if}
+
   <div class="terminal-container flex-1 bg-transparent" bind:this={terminalElement}></div>
+
+  <!-- Overlay for remote file browser -->
+  {#if tab.sessionType === 'ssh' && showFileOverlay}
+    <div class="absolute inset-0 z-30 flex items-center justify-center" style="background: rgba(0,0,0,0.5)">
+      <div class="rounded-lg shadow-xl overflow-hidden w-[80%] h-[75%] flex flex-col" style="background: var(--bg-secondary); border: 1px solid var(--border-color)">
+        <div class="flex items-center justify-between px-3 py-2" style="border-bottom: 1px solid var(--border-color)">
+          <div class="text-sm font-medium">Remote Files</div>
+          <div class="flex items-center gap-2">
+            <button class="px-2 py-1 text-xs rounded" style="background: var(--bg-tertiary)" onclick={() => showFileOverlay = false} aria-label="Close">Close</button>
+          </div>
+        </div>
+        <div class="flex-1 overflow-hidden">
+          <RemoteFileBrowser {tab} />
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <StatusBar />
 </div>

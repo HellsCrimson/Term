@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@sveltejs/kit": "^2.18.0",
-    "@wailsio/runtime": "latest",
+    "@wailsio/runtime": "^3.0.0-alpha.77",
     "flowbite": "^2.5.2",
     "ghostty-web": "^0.4.0",
     "guacamole-common-js": "^1.5.0"
