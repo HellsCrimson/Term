@@ -150,6 +150,7 @@
       tabindex="0"
     >
       {#if renamingTab === tab}
+        <!-- svelte-ignore a11y_autofocus -->
         <input
           type="text"
           bind:value={newTabName}

@@ -6,6 +6,7 @@
   import NewSessionDialog from './NewSessionDialog.svelte';
   import { sessionsStore } from '../stores/sessions.svelte';
   import * as LoggingService from '$bindings/term/loggingservice';
+  import TreeNodeComponent from './TreeNodeComponent.svelte'
 
   interface Props {
     node: TreeNode;
@@ -22,7 +23,7 @@
   let contextMenuX = $state(0);
   let contextMenuY = $state(0);
   let editingName = $state(false);
-  let newName = $state(node.session.name);
+  let newName = $derived(node.session.name);
   let isDragging = $state(false);
   let isDragOver = $state(false);
   let dragOverPosition = $state<'before' | 'inside' | 'after' | null>(null);
@@ -389,6 +390,7 @@
   >
     <span class="text-base">{getIcon(node)}</span>
     {#if editingName}
+      <!-- svelte-ignore a11y_autofocus -->
       <input
         type="text"
         bind:value={newName}
@@ -419,12 +421,12 @@
   {#if node.session.type === 'folder' && expanded && node.children.length > 0}
     <div class="children">
       {#each node.children as child}
-        <svelte:self
+        <TreeNodeComponent
           node={child}
           selected={selected && child.session.id === node.session.id}
           level={level + 1}
-          on:click
-          on:dblclick
+          on:click={() => dispatch('click', child.session)}
+          on:dblclick={() => dispatch('dblclick', child.session)}
         />
       {/each}
     </div>

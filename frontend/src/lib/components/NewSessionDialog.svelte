@@ -11,16 +11,16 @@
 
   let { show, onClose, defaultType, defaultParentId }: Props = $props();
 
-  let itemType = $state<'folder' | 'session'>(defaultType || 'session');
+  let itemType = $derived<'folder' | 'session'>(defaultType || 'session');
   let sessionName = $state('');
   let sessionType = $state<'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'rdp' | 'vnc' | 'telnet'>('bash');
-  let parentId = $state<string | null>(defaultParentId || null);
+  let parentId = $derived<string | null>(defaultParentId || null);
 
   // SSH-specific fields
   let sshHost = $state('');
   let sshPort = $state('22');
   let sshUsername = $state('');
-  let sshAuthMethod = $state<'password' | 'key'>('password');
+  let sshAuthMethod = $state<'password' | 'key'>('key');
   let sshPassword = $state('');
   let sshKeyPath = $state('');
 
@@ -51,7 +51,7 @@
   // Desktop configuration (for RDP/VNC)
   let desktopWidth = $state('1920');
   let desktopHeight = $state('1080');
-  let desktopColorDepth = $state<'8' | '16' | '24' | '32'>('16');
+  let desktopColorDepth = $state<'8' | '16' | '24' | '32'>('32');
 
   // Tab state
   let activeTab = $state<'connection' | 'session' | 'display'>('connection');
@@ -266,18 +266,6 @@
     desktopHeight = '1080';
     desktopColorDepth = '16';
   }
-
-  // Helper to check if we need setSessionConfig
-  async function setSessionConfig(sessionId: string, key: string, value: string) {
-    try {
-      await sessionsStore.setSessionConfig(sessionId, key, value);
-    } catch (error) {
-      LoggingService.Log(`Failed to set config ${key}: ${error}`, "ERROR");
-    }
-  }
-
-  // Alias for cleaner code
-  const setConfig = setSessionConfig;
 </script>
 
 {#if show}
@@ -289,8 +277,9 @@
 
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium mb-1">Type</label>
+          <label for="item_type" class="block text-sm font-medium mb-1">Type</label>
           <select
+            id="item_type"
             bind:value={itemType}
             class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
           >
@@ -300,8 +289,10 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-1">Name</label>
+          <label for="session_name" class="block text-sm font-medium mb-1">Name</label>
+          <!-- svelte-ignore a11y_autofocus -->
           <input
+            id="session_name"
             type="text"
             bind:value={sessionName}
             class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -312,8 +303,9 @@
 
         {#if itemType === 'session'}
           <div>
-            <label class="block text-sm font-medium mb-1">Session Type</label>
+            <label for="session_type" class="block text-sm font-medium mb-1">Session Type</label>
             <select
+              id="session_type"
               bind:value={sessionType}
               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
             >
@@ -363,8 +355,9 @@
 
                 <div class="grid grid-cols-2 gap-3">
                   <div class="col-span-2">
-                    <label class="block text-xs font-medium mb-1">Host *</label>
+                    <label for="ssh_host" class="block text-xs font-medium mb-1">Host *</label>
                     <input
+                      id="ssh_host"
                       type="text"
                       bind:value={sshHost}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -373,8 +366,9 @@
                   </div>
 
                   <div>
-                    <label class="block text-xs font-medium mb-1">Port</label>
+                    <label for="ssh_port" class="block text-xs font-medium mb-1">Port</label>
                     <input
+                      id="ssh_port"
                       type="text"
                       bind:value={sshPort}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -383,8 +377,9 @@
                   </div>
 
                   <div>
-                    <label class="block text-xs font-medium mb-1">Username</label>
+                    <label for="ssh_username" class="block text-xs font-medium mb-1">Username</label>
                     <input
+                      id="ssh_username"
                       type="text"
                       bind:value={sshUsername}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -394,8 +389,9 @@
                 </div>
 
                 <div>
-                  <label class="block text-xs font-medium mb-1">Authentication</label>
+                  <label for="ssh_auth_method" class="block text-xs font-medium mb-1">Authentication</label>
                   <select
+                    id="ssh_auth_method"
                     bind:value={sshAuthMethod}
                     class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
                   >
@@ -406,8 +402,9 @@
 
                 {#if sshAuthMethod === 'password'}
                   <div>
-                    <label class="block text-xs font-medium mb-1">Password</label>
+                    <label for="ssh_password" class="block text-xs font-medium mb-1">Password</label>
                     <input
+                      id="ssh_password"
                       type="password"
                       bind:value={sshPassword}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -416,8 +413,9 @@
                   </div>
                 {:else}
                   <div>
-                    <label class="block text-xs font-medium mb-1">Key Path</label>
+                    <label for="ssh_key_path" class="block text-xs font-medium mb-1">Key Path</label>
                     <input
+                      id="ssh_key_path"
                       type="text"
                       bind:value={sshKeyPath}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -436,8 +434,9 @@
                 <h4 class="text-sm font-medium text-purple-400">Session Configuration</h4>
 
                 <div>
-                  <label class="block text-xs font-medium mb-1">Working Directory</label>
+                  <label for="working_directory" class="block text-xs font-medium mb-1">Working Directory</label>
                   <input
+                    id="working_directory"
                     type="text"
                     bind:value={workingDirectory}
                     class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -447,8 +446,9 @@
                 </div>
 
                 <div>
-                  <label class="block text-xs font-medium mb-1">Startup Commands</label>
+                  <label for="startup_commands" class="block text-xs font-medium mb-1">Startup Commands</label>
                   <textarea
+                    id="startup_commands"
                     bind:value={startupCommands}
                     rows="2"
                     class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
@@ -458,8 +458,9 @@
                 </div>
 
                 <div>
-                  <label class="block text-xs font-medium mb-1">Environment Variables</label>
+                  <label for="environment_variables" class="block text-xs font-medium mb-1">Environment Variables</label>
                   <textarea
+                    id="environment_variables"
                     bind:value={environmentVariables}
                     rows="2"
                     class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
@@ -501,8 +502,9 @@
 
                 <div class="grid grid-cols-2 gap-3">
                   <div class="col-span-2">
-                    <label class="block text-xs font-medium mb-1">Host *</label>
+                    <label for="rdp_host" class="block text-xs font-medium mb-1">Host *</label>
                     <input
+                      id="rdp_host"
                       type="text"
                       bind:value={rdpHost}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -511,8 +513,9 @@
                   </div>
 
                   <div>
-                    <label class="block text-xs font-medium mb-1">Port</label>
+                    <label for="rdp_host" class="block text-xs font-medium mb-1">Port</label>
                     <input
+                      id="rdp_port"
                       type="text"
                       bind:value={rdpPort}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -521,8 +524,9 @@
                   </div>
 
                   <div>
-                    <label class="block text-xs font-medium mb-1">Security</label>
+                    <label for="rdp_security" class="block text-xs font-medium mb-1">Security</label>
                     <select
+                      id="rdp_security"
                       bind:value={rdpSecurity}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
                     >
@@ -534,8 +538,9 @@
                   </div>
 
                   <div>
-                    <label class="block text-xs font-medium mb-1">Username</label>
+                    <label for="rdp_username" class="block text-xs font-medium mb-1">Username</label>
                     <input
+                      id="rdp_username"
                       type="text"
                       bind:value={rdpUsername}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -544,8 +549,9 @@
                   </div>
 
                   <div>
-                    <label class="block text-xs font-medium mb-1">Password</label>
+                    <label for="rdp_password" class="block text-xs font-medium mb-1">Password</label>
                     <input
+                      id="rdp_password"
                       type="password"
                       bind:value={rdpPassword}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -554,8 +560,9 @@
                   </div>
 
                   <div class="col-span-2">
-                    <label class="block text-xs font-medium mb-1">Domain (Optional)</label>
+                    <label for="rdp_domain" class="block text-xs font-medium mb-1">Domain (Optional)</label>
                     <input
+                      id="rdp_domain"
                       type="text"
                       bind:value={rdpDomain}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -570,8 +577,9 @@
 
                 <div class="grid grid-cols-3 gap-3">
                   <div>
-                    <label class="block text-xs font-medium mb-1">Width</label>
+                    <label for="desktop_width" class="block text-xs font-medium mb-1">Width</label>
                     <input
+                      id="desktop_width"
                       type="text"
                       bind:value={desktopWidth}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -579,8 +587,9 @@
                     />
                   </div>
                   <div>
-                    <label class="block text-xs font-medium mb-1">Height</label>
+                    <label for="desktop_height" class="block text-xs font-medium mb-1">Height</label>
                     <input
+                      id="desktop_height"
                       type="text"
                       bind:value={desktopHeight}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -588,8 +597,9 @@
                     />
                   </div>
                   <div>
-                    <label class="block text-xs font-medium mb-1">Color Depth</label>
+                    <label for="desktop_color_depth" class="block text-xs font-medium mb-1">Color Depth</label>
                     <select
+                      id="desktop_color_depth"
                       bind:value={desktopColorDepth}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
                     >
@@ -630,8 +640,9 @@
 
                 <div class="grid grid-cols-2 gap-3">
                   <div class="col-span-2">
-                    <label class="block text-xs font-medium mb-1">Host *</label>
+                    <label for="vnc_host" class="block text-xs font-medium mb-1">Host *</label>
                     <input
+                      id="vnc_host"
                       type="text"
                       bind:value={vncHost}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -640,8 +651,9 @@
                   </div>
 
                   <div>
-                    <label class="block text-xs font-medium mb-1">Port</label>
+                    <label for="vnc_port" class="block text-xs font-medium mb-1">Port</label>
                     <input
+                      id="vnc_port"
                       type="text"
                       bind:value={vncPort}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -650,8 +662,9 @@
                   </div>
 
                   <div>
-                    <label class="block text-xs font-medium mb-1">Password</label>
+                    <label for="vnc_password" class="block text-xs font-medium mb-1">Password</label>
                     <input
+                      id="vnc_password"
                       type="password"
                       bind:value={vncPassword}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -666,8 +679,9 @@
 
                 <div class="grid grid-cols-3 gap-3">
                   <div>
-                    <label class="block text-xs font-medium mb-1">Width</label>
+                    <label for="desktop_width" class="block text-xs font-medium mb-1">Width</label>
                     <input
+                      id="desktop_width"
                       type="text"
                       bind:value={desktopWidth}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -675,8 +689,9 @@
                     />
                   </div>
                   <div>
-                    <label class="block text-xs font-medium mb-1">Height</label>
+                    <label for="desktop_height" class="block text-xs font-medium mb-1">Height</label>
                     <input
+                      id="desktop_height"
                       type="text"
                       bind:value={desktopHeight}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -684,8 +699,9 @@
                     />
                   </div>
                   <div>
-                    <label class="block text-xs font-medium mb-1">Color Depth</label>
+                    <label for="desktop_color_depth" class="block text-xs font-medium mb-1">Color Depth</label>
                     <select
+                      id="desktop_color_depth"
                       bind:value={desktopColorDepth}
                       class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
                     >
@@ -717,8 +733,9 @@
 
               <div class="grid grid-cols-2 gap-3">
                 <div class="col-span-2">
-                  <label class="block text-xs font-medium mb-1">Host *</label>
+                  <label for="telnet_host" class="block text-xs font-medium mb-1">Host *</label>
                   <input
+                    id="telnet_host"
                     type="text"
                     bind:value={telnetHost}
                     class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -727,8 +744,9 @@
                 </div>
 
                 <div>
-                  <label class="block text-xs font-medium mb-1">Port</label>
+                  <label for="telnet_port" class="block text-xs font-medium mb-1">Port</label>
                   <input
+                    id="telnet_port"
                     type="text"
                     bind:value={telnetPort}
                     class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -737,8 +755,9 @@
                 </div>
 
                 <div>
-                  <label class="block text-xs font-medium mb-1">Username (Optional)</label>
+                  <label for="telnet_username" class="block text-xs font-medium mb-1">Username (Optional)</label>
                   <input
+                    id="telnet_username"
                     type="text"
                     bind:value={telnetUsername}
                     class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -747,8 +766,9 @@
                 </div>
 
                 <div class="col-span-2">
-                  <label class="block text-xs font-medium mb-1">Password (Optional)</label>
+                  <label for="telnet_password" class="block text-xs font-medium mb-1">Password (Optional)</label>
                   <input
+                    id="telnet_password"
                     type="password"
                     bind:value={telnetPassword}
                     class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -777,8 +797,9 @@
               <h4 class="text-sm font-medium text-purple-400">Session Configuration</h4>
 
               <div>
-                <label class="block text-xs font-medium mb-1">Working Directory</label>
+                <label for="working_directory" class="block text-xs font-medium mb-1">Working Directory</label>
                 <input
+                  id="working_directory"
                   type="text"
                   bind:value={workingDirectory}
                   class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -788,8 +809,9 @@
               </div>
 
               <div>
-                <label class="block text-xs font-medium mb-1">Startup Commands</label>
+                <label for="startup_commands" class="block text-xs font-medium mb-1">Startup Commands</label>
                 <textarea
+                  id="startup_commands"
                   bind:value={startupCommands}
                   rows="2"
                   class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"
@@ -799,8 +821,9 @@
               </div>
 
               <div>
-                <label class="block text-xs font-medium mb-1">Environment Variables</label>
+                <label for="environment_variables" class="block text-xs font-medium mb-1">Environment Variables</label>
                 <textarea
+                  id="environment_variables"
                   bind:value={environmentVariables}
                   rows="2"
                   class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono"

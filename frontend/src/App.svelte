@@ -265,6 +265,8 @@
     </div>
 
     <!-- Resizer -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
       class="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize transition-colors"
       onmousedown={handleMouseDown}

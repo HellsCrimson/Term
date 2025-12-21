@@ -115,8 +115,9 @@
           <h3 class="text-lg font-medium mb-3">Appearance</h3>
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">Color Theme</label>
+              <label for="selected_theme" class="block text-sm font-medium mb-2">Color Theme</label>
               <select
+                id="selected_theme"
                 bind:value={selectedThemeId}
                 class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
               >
@@ -140,8 +141,9 @@
           <h3 class="text-lg font-medium mb-3">Typography</h3>
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">Font Family</label>
+              <label for="font_family" class="block text-sm font-medium mb-2">Font Family</label>
               <select
+                id="font_family"
                 bind:value={fontFamily}
                 class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
                 style="font-family: {fontFamily}"
@@ -158,15 +160,16 @@
               <p class="text-xs text-gray-500 mt-2">
                 💡 Nerd Fonts include powerline symbols and icons for oh-my-zsh, powerlevel10k, etc.
                 <br />
-                Download from <a href="#" class="text-blue-400 hover:underline" onclick={(e) => { e.preventDefault(); }}>nerdfonts.com</a>
+                Download from <a href="https://www.nerdfonts.com/" class="text-blue-400 hover:underline" onclick={(e) => { e.preventDefault(); }}>nerdfonts.com</a>
               </p>
             </div>
 
             <div>
-              <label class="block text-sm font-medium mb-2">
+              <label for="font_size" class="block text-sm font-medium mb-2">
                 Font Size: {fontSize}px
               </label>
               <input
+                id="font_size"
                 type="range"
                 bind:value={fontSize}
                 min="8"
@@ -188,6 +191,7 @@
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <div>
+                <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="block text-sm font-medium">Auto-launch tabs</label>
                 <p class="text-xs text-gray-400">
                   Automatically open a terminal tab when selecting a session
@@ -207,6 +211,7 @@
 
             <div class="flex items-center justify-between">
               <div>
+                <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="block text-sm font-medium">Restore tabs on startup</label>
                 <p class="text-xs text-gray-400">
                   Automatically restore previously open tabs when app starts
@@ -226,6 +231,7 @@
 
             <div class="flex items-center justify-between">
               <div>
+                <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="block text-sm font-medium">Confirm tab close</label>
                 <p class="text-xs text-gray-400">
                   Show confirmation dialog when closing active tabs
@@ -245,6 +251,7 @@
 
             <div class="flex items-center justify-between">
               <div>
+                <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="block text-sm font-medium">Show status bar</label>
                 <p class="text-xs text-gray-400">
                   Display system resource monitoring bar (CPU, RAM, Disk, Network)
