@@ -5,6 +5,7 @@ import * as LoggingService from "./loggingservice.js";
 import * as RemoteStatsService from "./remotestatsservice.js";
 import * as SessionService from "./sessionservice.js";
 import * as SettingsService from "./settingsservice.js";
+import * as SftpService from "./sftpservice.js";
 import * as SystemStatsService from "./systemstatsservice.js";
 import * as TerminalService from "./terminalservice.js";
 import * as ThemeService from "./themeservice.js";
@@ -13,12 +14,15 @@ export {
     RemoteStatsService,
     SessionService,
     SettingsService,
+    SftpService,
     SystemStatsService,
     TerminalService,
     ThemeService
 };
 
 export {
+    FileEntry,
+    FileList,
     StartSessionRequest,
     SystemStats,
     TerminalColors,

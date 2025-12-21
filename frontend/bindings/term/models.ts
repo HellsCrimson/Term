@@ -21,6 +21,76 @@ import * as exec$0 from "../os/exec/models.js";
 // @ts-ignore: Unused imports
 import * as database$0 from "./database/models.js";
 
+export class FileEntry {
+    "name": string;
+    "path": string;
+    "size": number;
+    "mode": string;
+    "isDir": boolean;
+    "modTime": number;
+
+    /** Creates a new FileEntry instance. */
+    constructor($$source: Partial<FileEntry> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("path" in $$source)) {
+            this["path"] = "";
+        }
+        if (!("size" in $$source)) {
+            this["size"] = 0;
+        }
+        if (!("mode" in $$source)) {
+            this["mode"] = "";
+        }
+        if (!("isDir" in $$source)) {
+            this["isDir"] = false;
+        }
+        if (!("modTime" in $$source)) {
+            this["modTime"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new FileEntry instance from a string or object.
+     */
+    static createFrom($$source: any = {}): FileEntry {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new FileEntry($$parsedSource as Partial<FileEntry>);
+    }
+}
+
+export class FileList {
+    "remote_path": string;
+    "files": FileEntry[];
+
+    /** Creates a new FileList instance. */
+    constructor($$source: Partial<FileList> = {}) {
+        if (!("remote_path" in $$source)) {
+            this["remote_path"] = "";
+        }
+        if (!("files" in $$source)) {
+            this["files"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new FileList instance from a string or object.
+     */
+    static createFrom($$source: any = {}): FileList {
+        const $$createField1_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("files" in $$parsedSource) {
+            $$parsedSource["files"] = $$createField1_0($$parsedSource["files"]);
+        }
+        return new FileList($$parsedSource as Partial<FileList>);
+    }
+}
+
 /**
  * StartSessionRequest represents the parameters for starting a new terminal session
  */
@@ -60,7 +130,7 @@ export class StartSessionRequest {
      * Creates a new StartSessionRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): StartSessionRequest {
-        const $$createField2_0 = $$createType0;
+        const $$createField2_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("config" in $$parsedSource) {
             $$parsedSource["config"] = $$createField2_0($$parsedSource["config"]);
@@ -282,10 +352,10 @@ export class TerminalSession {
      * Creates a new TerminalSession instance from a string or object.
      */
     static createFrom($$source: any = {}): TerminalSession {
-        const $$createField1_0 = $$createType2;
-        const $$createField2_0 = $$createType4;
-        const $$createField4_0 = $$createType6;
-        const $$createField5_0 = $$createType8;
+        const $$createField1_0 = $$createType4;
+        const $$createField2_0 = $$createType6;
+        const $$createField4_0 = $$createType8;
+        const $$createField5_0 = $$createType10;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("PTY" in $$parsedSource) {
             $$parsedSource["PTY"] = $$createField1_0($$parsedSource["PTY"]);
@@ -339,8 +409,8 @@ export class Theme {
      * Creates a new Theme instance from a string or object.
      */
     static createFrom($$source: any = {}): Theme {
-        const $$createField3_0 = $$createType9;
-        const $$createField4_0 = $$createType10;
+        const $$createField3_0 = $$createType11;
+        const $$createField4_0 = $$createType12;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("colors" in $$parsedSource) {
             $$parsedSource["colors"] = $$createField3_0($$parsedSource["colors"]);
@@ -420,8 +490,8 @@ export class TreeNode {
      * Creates a new TreeNode instance from a string or object.
      */
     static createFrom($$source: any = {}): TreeNode {
-        const $$createField0_0 = $$createType11;
-        const $$createField1_0 = $$createType13;
+        const $$createField0_0 = $$createType13;
+        const $$createField1_0 = $$createType15;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("session" in $$parsedSource) {
             $$parsedSource["session"] = $$createField0_0($$parsedSource["session"]);
@@ -434,17 +504,19 @@ export class TreeNode {
 }
 
 // Private type creation functions
-const $$createType0 = $Create.Map($Create.Any, $Create.Any);
-const $$createType1 = os$0.File.createFrom;
-const $$createType2 = $Create.Nullable($$createType1);
-const $$createType3 = exec$0.Cmd.createFrom;
+const $$createType0 = FileEntry.createFrom;
+const $$createType1 = $Create.Array($$createType0);
+const $$createType2 = $Create.Map($Create.Any, $Create.Any);
+const $$createType3 = os$0.File.createFrom;
 const $$createType4 = $Create.Nullable($$createType3);
-const $$createType5 = ssh$0.Client.createFrom;
+const $$createType5 = exec$0.Cmd.createFrom;
 const $$createType6 = $Create.Nullable($$createType5);
-const $$createType7 = ssh$0.Session.createFrom;
+const $$createType7 = ssh$0.Client.createFrom;
 const $$createType8 = $Create.Nullable($$createType7);
-const $$createType9 = ThemeColors.createFrom;
-const $$createType10 = TerminalColors.createFrom;
-const $$createType11 = database$0.SessionNode.createFrom;
-const $$createType12 = TreeNode.createFrom;
-const $$createType13 = $Create.Array($$createType12);
+const $$createType9 = ssh$0.Session.createFrom;
+const $$createType10 = $Create.Nullable($$createType9);
+const $$createType11 = ThemeColors.createFrom;
+const $$createType12 = TerminalColors.createFrom;
+const $$createType13 = database$0.SessionNode.createFrom;
+const $$createType14 = TreeNode.createFrom;
+const $$createType15 = $Create.Array($$createType14);

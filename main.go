@@ -66,6 +66,9 @@ func main() {
 	terminalService := NewTerminalService(app)
 	app.RegisterService(application.NewService(terminalService))
 
+	sftpService := NewSFTPService(app, terminalService)
+	app.RegisterService(application.NewService(sftpService))
+
 	// Create theme service (needs app context)
 	themeService := NewThemeService(app.Context(), settingsService)
 	app.RegisterService(application.NewService(themeService))
@@ -83,8 +86,8 @@ func main() {
 	remoteStatsService.Start()
 
 	// Create Guacamole service and HTTP server
-    guacService := NewGuacamoleService(sessionService)
-    httpServer := NewHTTPServer(3000, guacService, terminalService)
+	guacService := NewGuacamoleService(sessionService)
+	httpServer := NewHTTPServer(3000, guacService, terminalService)
 	if err := httpServer.Start(); err != nil {
 		log.Printf("Failed to start HTTP server: %v", err)
 	}
