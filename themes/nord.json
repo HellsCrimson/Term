@@ -1,0 +1,54 @@
+{
+  "name": "Nord",
+  "id": "nord",
+  "type": "dark",
+  "colors": {
+    "bg": {
+      "primary": "#2e3440",
+      "secondary": "#242933",
+      "tertiary": "#3b4252",
+      "quaternary": "#434c5e"
+    },
+    "text": {
+      "primary": "#eceff4",
+      "secondary": "#e5e9f0",
+      "muted": "#d8dee9"
+    },
+    "accent": {
+      "blue": "#5e81ac",
+      "green": "#a3be8c",
+      "red": "#bf616a",
+      "yellow": "#ebcb8b",
+      "purple": "#b48ead",
+      "pink": "#b48ead",
+      "cyan": "#88c0d0",
+      "orange": "#d08770"
+    },
+    "border": "#434c5e",
+    "hover": "#3b4252",
+    "active": "#434c5e",
+    "selection": "#3b4252"
+  },
+  "terminal": {
+    "background": "#2e3440",
+    "foreground": "#eceff4",
+    "cursor": "#eceff4",
+    "selectionBackground": "#3b4252",
+    "black": "#3b4252",
+    "red": "#bf616a",
+    "green": "#a3be8c",
+    "yellow": "#ebcb8b",
+    "blue": "#5e81ac",
+    "magenta": "#b48ead",
+    "cyan": "#88c0d0",
+    "white": "#eceff4",
+    "brightBlack": "#434c5e",
+    "brightRed": "#d06f79",
+    "brightGreen": "#b1c89b",
+    "brightYellow": "#f0d49a",
+    "brightBlue": "#6d90bb",
+    "brightMagenta": "#c39dbc",
+    "brightCyan": "#97cfdf",
+    "brightWhite": "#ffffff"
+  }
+}

@@ -137,6 +137,103 @@ export class SystemStats {
     }
 }
 
+export class TerminalColors {
+    "background": string;
+    "foreground": string;
+    "cursor": string;
+    "selectionBackground": string;
+    "black": string;
+    "red": string;
+    "green": string;
+    "yellow": string;
+    "blue": string;
+    "magenta": string;
+    "cyan": string;
+    "white": string;
+    "brightBlack": string;
+    "brightRed": string;
+    "brightGreen": string;
+    "brightYellow": string;
+    "brightBlue": string;
+    "brightMagenta": string;
+    "brightCyan": string;
+    "brightWhite": string;
+
+    /** Creates a new TerminalColors instance. */
+    constructor($$source: Partial<TerminalColors> = {}) {
+        if (!("background" in $$source)) {
+            this["background"] = "";
+        }
+        if (!("foreground" in $$source)) {
+            this["foreground"] = "";
+        }
+        if (!("cursor" in $$source)) {
+            this["cursor"] = "";
+        }
+        if (!("selectionBackground" in $$source)) {
+            this["selectionBackground"] = "";
+        }
+        if (!("black" in $$source)) {
+            this["black"] = "";
+        }
+        if (!("red" in $$source)) {
+            this["red"] = "";
+        }
+        if (!("green" in $$source)) {
+            this["green"] = "";
+        }
+        if (!("yellow" in $$source)) {
+            this["yellow"] = "";
+        }
+        if (!("blue" in $$source)) {
+            this["blue"] = "";
+        }
+        if (!("magenta" in $$source)) {
+            this["magenta"] = "";
+        }
+        if (!("cyan" in $$source)) {
+            this["cyan"] = "";
+        }
+        if (!("white" in $$source)) {
+            this["white"] = "";
+        }
+        if (!("brightBlack" in $$source)) {
+            this["brightBlack"] = "";
+        }
+        if (!("brightRed" in $$source)) {
+            this["brightRed"] = "";
+        }
+        if (!("brightGreen" in $$source)) {
+            this["brightGreen"] = "";
+        }
+        if (!("brightYellow" in $$source)) {
+            this["brightYellow"] = "";
+        }
+        if (!("brightBlue" in $$source)) {
+            this["brightBlue"] = "";
+        }
+        if (!("brightMagenta" in $$source)) {
+            this["brightMagenta"] = "";
+        }
+        if (!("brightCyan" in $$source)) {
+            this["brightCyan"] = "";
+        }
+        if (!("brightWhite" in $$source)) {
+            this["brightWhite"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new TerminalColors instance from a string or object.
+     */
+    static createFrom($$source: any = {}): TerminalColors {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new TerminalColors($$parsedSource as Partial<TerminalColors>);
+    }
+}
+
 export class TerminalSession {
     "ID": string;
     "PTY": os$0.File | null;
@@ -206,6 +303,100 @@ export class TerminalSession {
     }
 }
 
+export class Theme {
+    "name": string;
+    "id": string;
+
+    /**
+     * "dark" or "light"
+     */
+    "type": string;
+    "colors": ThemeColors;
+    "terminal": TerminalColors;
+
+    /** Creates a new Theme instance. */
+    constructor($$source: Partial<Theme> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("type" in $$source)) {
+            this["type"] = "";
+        }
+        if (!("colors" in $$source)) {
+            this["colors"] = (new ThemeColors());
+        }
+        if (!("terminal" in $$source)) {
+            this["terminal"] = (new TerminalColors());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Theme instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Theme {
+        const $$createField3_0 = $$createType9;
+        const $$createField4_0 = $$createType10;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("colors" in $$parsedSource) {
+            $$parsedSource["colors"] = $$createField3_0($$parsedSource["colors"]);
+        }
+        if ("terminal" in $$parsedSource) {
+            $$parsedSource["terminal"] = $$createField4_0($$parsedSource["terminal"]);
+        }
+        return new Theme($$parsedSource as Partial<Theme>);
+    }
+}
+
+export class ThemeColors {
+    "bg": {"primary": string, "secondary": string, "tertiary": string, "quaternary": string};
+    "text": {"primary": string, "secondary": string, "muted": string};
+    "accent": {"blue": string, "green": string, "red": string, "yellow": string, "purple": string, "pink": string, "cyan": string, "orange": string};
+    "border": string;
+    "hover": string;
+    "active": string;
+    "selection": string;
+
+    /** Creates a new ThemeColors instance. */
+    constructor($$source: Partial<ThemeColors> = {}) {
+        if (!("bg" in $$source)) {
+            this["bg"] = {"primary": "", "secondary": "", "tertiary": "", "quaternary": ""};
+        }
+        if (!("text" in $$source)) {
+            this["text"] = {"primary": "", "secondary": "", "muted": ""};
+        }
+        if (!("accent" in $$source)) {
+            this["accent"] = {"blue": "", "green": "", "red": "", "yellow": "", "purple": "", "pink": "", "cyan": "", "orange": ""};
+        }
+        if (!("border" in $$source)) {
+            this["border"] = "";
+        }
+        if (!("hover" in $$source)) {
+            this["hover"] = "";
+        }
+        if (!("active" in $$source)) {
+            this["active"] = "";
+        }
+        if (!("selection" in $$source)) {
+            this["selection"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ThemeColors instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ThemeColors {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ThemeColors($$parsedSource as Partial<ThemeColors>);
+    }
+}
+
 /**
  * TreeNode represents a node in the hierarchical session tree
  */
@@ -229,8 +420,8 @@ export class TreeNode {
      * Creates a new TreeNode instance from a string or object.
      */
     static createFrom($$source: any = {}): TreeNode {
-        const $$createField0_0 = $$createType9;
-        const $$createField1_0 = $$createType11;
+        const $$createField0_0 = $$createType11;
+        const $$createField1_0 = $$createType13;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("session" in $$parsedSource) {
             $$parsedSource["session"] = $$createField0_0($$parsedSource["session"]);
@@ -252,6 +443,8 @@ const $$createType5 = ssh$0.Client.createFrom;
 const $$createType6 = $Create.Nullable($$createType5);
 const $$createType7 = ssh$0.Session.createFrom;
 const $$createType8 = $Create.Nullable($$createType7);
-const $$createType9 = database$0.SessionNode.createFrom;
-const $$createType10 = TreeNode.createFrom;
-const $$createType11 = $Create.Array($$createType10);
+const $$createType9 = ThemeColors.createFrom;
+const $$createType10 = TerminalColors.createFrom;
+const $$createType11 = database$0.SessionNode.createFrom;
+const $$createType12 = TreeNode.createFrom;
+const $$createType13 = $Create.Array($$createType12);

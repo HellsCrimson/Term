@@ -1,5 +1,6 @@
 <script lang="ts">
   import { settingsStore } from '../stores/settings.svelte';
+  import { themeStore } from '../stores/themeStore';
 
   interface Props {
     show: boolean;
@@ -10,6 +11,7 @@
 
   // Local state for settings
   let theme = $state(settingsStore.settings.theme);
+  let selectedThemeId = $state($themeStore.activeTheme?.id || 'dark');
   let fontFamily = $state(settingsStore.settings.fontFamily);
   let fontSize = $state(settingsStore.settings.fontSize);
   let autoLaunch = $state(settingsStore.settings.autoLaunch);
@@ -22,6 +24,7 @@
   $effect(() => {
     if (!saving) {
       theme = settingsStore.settings.theme;
+      selectedThemeId = $themeStore.activeTheme?.id || 'dark';
       fontFamily = settingsStore.settings.fontFamily;
       fontSize = settingsStore.settings.fontSize;
       autoLaunch = settingsStore.settings.autoLaunch;
@@ -41,6 +44,9 @@
       // Save sequentially to avoid database locks
       await settingsStore.setTheme(theme);
       console.log('Theme saved');
+
+      await themeStore.setTheme(selectedThemeId);
+      console.log('File-based theme saved');
 
       await settingsStore.setFontFamily(fontFamily);
       console.log('FontFamily saved');
@@ -73,6 +79,7 @@
   function handleCancel() {
     // Reset to current values
     theme = settingsStore.settings.theme;
+    selectedThemeId = $themeStore.activeTheme?.id || 'dark';
     fontFamily = settingsStore.settings.fontFamily;
     fontSize = settingsStore.settings.fontSize;
     autoLaunch = settingsStore.settings.autoLaunch;
@@ -95,11 +102,6 @@
     { value: '"Courier New", monospace', label: 'Courier New' }
   ];
 
-  const themes = [
-    { value: 'dark', label: 'Dark' },
-    { value: 'light', label: 'Light' },
-    { value: 'auto', label: 'Auto (System)' }
-  ];
 </script>
 
 {#if show}
@@ -113,15 +115,22 @@
           <h3 class="text-lg font-medium mb-3">Appearance</h3>
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">Theme</label>
+              <label class="block text-sm font-medium mb-2">Color Theme</label>
               <select
-                bind:value={theme}
+                bind:value={selectedThemeId}
                 class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
               >
-                {#each themes as themeOption}
-                  <option value={themeOption.value}>{themeOption.label}</option>
+                {#each $themeStore.themes as themeOption}
+                  <option value={themeOption.id}>
+                    {themeOption.name} {themeOption.type === 'dark' ? '🌙' : '☀️'}
+                  </option>
                 {/each}
               </select>
+              <p class="text-xs text-gray-400 mt-1">
+                {#if $themeStore.activeTheme}
+                  Currently active: {$themeStore.activeTheme.name}
+                {/if}
+              </p>
             </div>
           </div>
         </div>

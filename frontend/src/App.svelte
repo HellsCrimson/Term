@@ -9,6 +9,7 @@
   import { sessionsStore } from './lib/stores/sessions.svelte';
   import { settingsStore } from './lib/stores/settings.svelte';
   import { terminalsStore } from './lib/stores/terminals.svelte';
+  import { themeStore } from './lib/stores/themeStore';
   import * as LoggingService from '$bindings/term/loggingservice';
 
   let sidebarWidth = $state(250);
@@ -27,10 +28,11 @@
       // Initialize ghostty-web WASM (only once globally)
       await initGhostty();
 
-      // Load sessions and settings
+      // Load sessions, settings, and themes
       await Promise.all([
         sessionsStore.loadSessions(),
-        settingsStore.loadSettings()
+        settingsStore.loadSettings(),
+        themeStore.loadThemes()
       ]);
 
       console.log(`Settings loaded: restoreTabsOnStartup=${settingsStore.settings.restoreTabsOnStartup}, confirmTabClose=${settingsStore.settings.confirmTabClose}`);

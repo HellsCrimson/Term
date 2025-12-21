@@ -7,18 +7,23 @@ import * as SessionService from "./sessionservice.js";
 import * as SettingsService from "./settingsservice.js";
 import * as SystemStatsService from "./systemstatsservice.js";
 import * as TerminalService from "./terminalservice.js";
+import * as ThemeService from "./themeservice.js";
 export {
     LoggingService,
     RemoteStatsService,
     SessionService,
     SettingsService,
     SystemStatsService,
-    TerminalService
+    TerminalService,
+    ThemeService
 };
 
 export {
     StartSessionRequest,
     SystemStats,
+    TerminalColors,
     TerminalSession,
+    Theme,
+    ThemeColors,
     TreeNode
 } from "./models.js";

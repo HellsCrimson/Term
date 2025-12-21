@@ -66,6 +66,10 @@ func main() {
 	terminalService := NewTerminalService(app)
 	app.RegisterService(application.NewService(terminalService))
 
+	// Create theme service (needs app context)
+	themeService := NewThemeService(app.Context(), settingsService)
+	app.RegisterService(application.NewService(themeService))
+
 	// Create and start system stats service (needs terminal service to check session types)
 	systemStatsService := NewSystemStatsService(terminalService)
 	systemStatsService.SetApp(app)
