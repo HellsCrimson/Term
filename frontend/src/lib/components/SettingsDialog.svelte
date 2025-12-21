@@ -169,12 +169,15 @@
             <!-- Import/Export themes -->
             <div class="mt-4 space-y-3">
               <div>
-                <label class="block text-sm font-medium mb-1">Import theme from JSON</label>
+                <label for="import_path" class="block text-sm font-medium mb-1">Import theme from JSON</label>
                 <div class="flex gap-2">
-                  <input type="text" bind:value={importPath}
-                         placeholder="/path/to/theme.json"
-                         class="flex-1 px-3 py-2 rounded border focus:outline-none"
-                         style="background: var(--bg-tertiary); border-color: var(--border-color)" />
+                  <input
+                    id="import_path"
+                    type="text"
+                    bind:value={importPath}
+                    placeholder="/path/to/theme.json"
+                    class="flex-1 px-3 py-2 rounded border focus:outline-none"
+                    style="background: var(--bg-tertiary); border-color: var(--border-color)" />
                   <button class="px-3 py-2 rounded text-white"
                           style="background: var(--accent-green)"
                           onclick={async () => { if (!importPath) return; await themeStore.importTheme(importPath); }}>
@@ -186,12 +189,15 @@
                 </p>
               </div>
               <div>
-                <label class="block text-sm font-medium mb-1">Export current theme</label>
+                <label for="export_path" class="block text-sm font-medium mb-1">Export current theme</label>
                 <div class="flex gap-2">
-                  <input type="text" bind:value={exportPath}
-                         placeholder="/path/to/save/theme.json"
-                         class="flex-1 px-3 py-2 rounded border focus:outline-none"
-                         style="background: var(--bg-tertiary); border-color: var(--border-color)" />
+                  <input
+                    id="export_path"
+                    type="text"
+                    bind:value={exportPath}
+                    placeholder="/path/to/save/theme.json"
+                    class="flex-1 px-3 py-2 rounded border focus:outline-none"
+                    style="background: var(--bg-tertiary); border-color: var(--border-color)" />
                   <button class="px-3 py-2 rounded text-white disabled:opacity-60"
                           style="background: var(--accent-blue)"
                           disabled={exporting || !$themeStore.activeTheme}
