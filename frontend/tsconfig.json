@@ -31,7 +31,6 @@
     "src/**/*.js",
     "src/**/*.svelte",
     "bindings/**/*.ts",
-    "src/main.ts",
     "src/main.ts"
   ],
 }

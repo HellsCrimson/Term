@@ -311,20 +311,22 @@
         </div>
   </div>
 
-  <div slot="footer" class="flex gap-2 mt-6 pt-6" style="border-top: 1px solid var(--border-color)">
-    <button
-      onclick={handleSave}
-      class="flex-1 px-4 py-2 rounded font-medium transition-colors text-white"
-      style="background: var(--accent-blue)"
-    >
-      Save
-    </button>
-    <button
-      onclick={handleCancel}
-      class="flex-1 px-4 py-2 rounded font-medium transition-colors"
-      style="background: var(--bg-tertiary)"
-    >
-      Cancel
-    </button>
-  </div>
+  {#snippet footer()}
+    <div class="flex gap-2 mt-6 pt-6" style="border-top: 1px solid var(--border-color)">
+      <button
+        onclick={handleSave}
+        class="flex-1 px-4 py-2 rounded font-medium transition-colors text-white"
+        style="background: var(--accent-blue)"
+      >
+        Save
+      </button>
+      <button
+        onclick={handleCancel}
+        class="flex-1 px-4 py-2 rounded font-medium transition-colors"
+        style="background: var(--bg-tertiary)"
+      >
+        Cancel
+      </button>
+    </div>
+  {/snippet}
 </Modal>

@@ -258,9 +258,11 @@
         <RemoteFileBrowser {tab} />
       </div>
 
-      <div slot="footer" class="flex justify-end mt-4 pt-2" style="border-top: 1px solid var(--border-color)">
-        <button class="px-2 py-1 text-xs rounded" style="background: var(--bg-tertiary)" onclick={() => showFileOverlay = false} aria-label="Close">Close</button>
-      </div>
+      {#snippet footer()}
+        <div class="flex justify-end mt-4 pt-2" style="border-top: 1px solid var(--border-color)">
+          <button class="px-2 py-1 text-xs rounded" style="background: var(--bg-tertiary)" onclick={() => showFileOverlay = false} aria-label="Close">Close</button>
+        </div>
+      {/snippet}
     </Modal>
   {/if}
 
