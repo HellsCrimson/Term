@@ -141,7 +141,7 @@
 <div class="flex overflow-x-auto" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color)">
   {#each tabs as tab (tab.id)}
     <div
-      class="terminal-tab {tab.active ? 'active' : ''} {tab.exited ? 'exited' : ''}"
+      class="terminal-tab flex items-center min-w-0 gap-2 {tab.active ? 'active' : ''} {tab.exited ? 'exited' : ''}"
       onclick={() => renamingTab !== tab && handleTabClick(tab)}
       oncontextmenu={(e) => handleTabContextMenu(e, tab)}
       onkeydown={(e) => handleTabKeyDown(e, tab)}

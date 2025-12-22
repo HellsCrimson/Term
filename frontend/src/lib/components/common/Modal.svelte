@@ -9,9 +9,13 @@
     panelClass?: string;
     /** If true, clicking outside the panel closes the modal */
     closeOnOverlay?: boolean;
+    /** Default slot */
+    children?: () => any;
+    /** Named footer slot */
+    footer?: () => any;
   }
 
-  let { show, title, onClose, panelClass = 'w-96', closeOnOverlay = true }: Props = $props();
+  let { show, title, onClose, panelClass = 'w-96', closeOnOverlay = true, children, footer }: Props = $props();
 
   let panelEl: HTMLDivElement | null = $state(null);
 
@@ -41,29 +45,31 @@
     style="background: rgba(0,0,0,0.5)"
     onclick={handleOverlayClick}
     role="dialog"
+    tabindex="0"
+    onkeydown={(e) => { if (e.key === 'Escape') { onClose(); } }}
     aria-modal="true"
   >
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       bind:this={panelEl}
       class={`rounded-lg p-6 max-h-[80vh] overflow-y-auto panel ${panelClass || ''}`}
       style="background: var(--bg-secondary); border: 1px solid var(--border-color)"
       onclick={(e) => e.stopPropagation()}
+      role="document"
+      onkeydown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}
     >
       {#if title}
         <h2 class="text-xl font-semibold mb-4">{title}</h2>
       {/if}
 
-      <slot />
+      {@render children?.()}
 
-      <slot name="footer" />
+      {@render footer?.()}
     </div>
   </div>
 {/if}
 
 <style>
-  .panel {
-    /* utility class hook if needed */
-  }
   :global(.modal-actions-divider) {
     border-top: 1px solid var(--border-color);
   }
