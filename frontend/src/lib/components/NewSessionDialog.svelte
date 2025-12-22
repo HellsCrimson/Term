@@ -1,6 +1,7 @@
 <script lang="ts">
     import { LoggingService } from '$bindings/term';
   import { sessionsStore } from '../stores/sessions.svelte';
+  import Modal from './common/Modal.svelte';
 
   interface Props {
     show: boolean;
@@ -268,14 +269,8 @@
   }
 </script>
 
-{#if show}
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-gray-800 rounded-lg p-6 w-96 border border-gray-700">
-      <h2 class="text-xl font-semibold mb-4">
-        Create New {itemType === 'folder' ? 'Folder' : 'Session'}
-      </h2>
-
-      <div class="space-y-4">
+<Modal show={show} title={`Create New ${itemType === 'folder' ? 'Folder' : 'Session'}`} onClose={handleCancel} panelClass="w-96">
+  <div class="space-y-4">
         <div>
           <label for="item_type" class="block text-sm font-medium mb-1">Type</label>
           <select
@@ -840,20 +835,20 @@
         {/if}
       </div>
 
-      <div class="flex gap-2 mt-6">
-        <button
-          onclick={handleCreate}
-          class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium"
-        >
-          Create
-        </button>
-        <button
-          onclick={handleCancel}
-          class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded font-medium"
-        >
-          Cancel
-        </button>
-      </div>
+    <div class="flex gap-2 mt-6">
+      <button
+        onclick={handleCreate}
+        class="flex-1 px-4 py-2 rounded font-medium text-white"
+        style="background: var(--accent-blue)"
+      >
+        Create
+      </button>
+      <button
+        onclick={handleCancel}
+        class="flex-1 px-4 py-2 rounded font-medium"
+        style="background: var(--bg-tertiary)"
+      >
+        Cancel
+      </button>
     </div>
-  </div>
-{/if}
+</Modal>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { sessionsStore } from '../stores/sessions.svelte';
   import type { SessionNode } from '../types';
+  import Modal from './common/Modal.svelte';
 
   interface Props {
     show: boolean;
@@ -320,18 +321,13 @@
 </script>
 
 {#if show && session}
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-gray-800 rounded-lg p-6 w-96 border border-gray-700">
-      <h2 class="text-xl font-semibold mb-4">
-        Edit {session.type === 'folder' ? 'Folder' : 'Session'}
-      </h2>
-
-      {#if loading}
-        <div class="text-center py-8">
-          <div class="text-gray-400">Loading configuration...</div>
-        </div>
-      {:else}
-        <div class="space-y-4">
+  <Modal show={show} title={`Edit ${session.type === 'folder' ? 'Folder' : 'Session'}`} onClose={handleCancel} panelClass="w-96">
+    {#if loading}
+      <div class="text-center py-8">
+        <div class="text-gray-400">Loading configuration...</div>
+      </div>
+    {:else}
+      <div class="space-y-4">
           <div>
             <label for="session_name" class="block text-sm font-medium mb-1">Name</label>
             <input
@@ -1155,23 +1151,25 @@
               </div>
             {/if}
           {/if}
-        </div>
+        
 
         <div class="flex gap-2 mt-6">
           <button
             onclick={handleSave}
-            class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium"
+            class="flex-1 px-4 py-2 rounded font-medium text-white"
+            style="background: var(--accent-blue)"
           >
             Save
           </button>
           <button
             onclick={handleCancel}
-            class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded font-medium"
+            class="flex-1 px-4 py-2 rounded font-medium"
+            style="background: var(--bg-tertiary)"
           >
             Cancel
           </button>
         </div>
-      {/if}
-    </div>
-  </div>
+      </div>
+    {/if}
+  </Modal>
 {/if}

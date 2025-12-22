@@ -2,6 +2,8 @@
   import { settingsStore } from '../stores/settings.svelte';
   import { themeStore } from '../stores/themeStore';
   import { Browser } from '@wailsio/runtime'
+  import Modal from './common/Modal.svelte';
+  import ToggleSwitch from './common/ToggleSwitch.svelte';
 
   interface Props {
     show: boolean;
@@ -109,13 +111,8 @@
 
 </script>
 
-{#if show}
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="rounded-lg p-6 w-[560px] max-h-[80vh] overflow-y-auto"
-         style="background: var(--bg-secondary); border: 1px solid var(--border-color)">
-      <h2 class="text-2xl font-semibold mb-6">Settings</h2>
-
-      <div class="space-y-6">
+<Modal show={show} title="Settings" onClose={handleCancel} panelClass="w-[560px] max-h-[80vh] overflow-y-auto">
+  <div class="space-y-6">
         <!-- Theme -->
         <div>
           <h3 class="text-lg font-medium mb-3">Appearance</h3>
@@ -275,16 +272,7 @@
                   Automatically open a terminal tab when selecting a session
                 </p>
               </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  bind:checked={autoLaunch}
-                  class="sr-only peer"
-                />
-                <div
-                  class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
-                ></div>
-              </label>
+              <ToggleSwitch checked={autoLaunch} ariaLabel="Auto-launch tabs" on:change={(e) => autoLaunch = e.detail} />
             </div>
 
             <div class="flex items-center justify-between">
@@ -295,16 +283,7 @@
                   Automatically restore previously open tabs when app starts
                 </p>
               </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  bind:checked={restoreTabsOnStartup}
-                  class="sr-only peer"
-                />
-                <div
-                  class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
-                ></div>
-              </label>
+              <ToggleSwitch checked={restoreTabsOnStartup} ariaLabel="Restore tabs on startup" on:change={(e) => restoreTabsOnStartup = e.detail} />
             </div>
 
             <div class="flex items-center justify-between">
@@ -315,16 +294,7 @@
                   Show confirmation dialog when closing active tabs
                 </p>
               </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  bind:checked={confirmTabClose}
-                  class="sr-only peer"
-                />
-                <div
-                  class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
-                ></div>
-              </label>
+              <ToggleSwitch checked={confirmTabClose} ariaLabel="Confirm tab close" on:change={(e) => confirmTabClose = e.detail} />
             </div>
 
             <div class="flex items-center justify-between">
@@ -335,37 +305,26 @@
                   Display system resource monitoring bar (CPU, RAM, Disk, Network)
                 </p>
               </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  bind:checked={showStatusBar}
-                  class="sr-only peer"
-                />
-                <div
-                  class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
-                ></div>
-              </label>
+              <ToggleSwitch checked={showStatusBar} ariaLabel="Show status bar" on:change={(e) => showStatusBar = e.detail} />
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="flex gap-2 mt-6 pt-6" style="border-top: 1px solid var(--border-color)">
-        <button
-          onclick={handleSave}
-          class="flex-1 px-4 py-2 rounded font-medium transition-colors text-white"
-          style="background: var(--accent-blue)"
-        >
-          Save
-        </button>
-        <button
-          onclick={handleCancel}
-          class="flex-1 px-4 py-2 rounded font-medium transition-colors"
-          style="background: var(--bg-tertiary)"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
   </div>
-{/if}
+
+  <div slot="footer" class="flex gap-2 mt-6 pt-6" style="border-top: 1px solid var(--border-color)">
+    <button
+      onclick={handleSave}
+      class="flex-1 px-4 py-2 rounded font-medium transition-colors text-white"
+      style="background: var(--accent-blue)"
+    >
+      Save
+    </button>
+    <button
+      onclick={handleCancel}
+      class="flex-1 px-4 py-2 rounded font-medium transition-colors"
+      style="background: var(--bg-tertiary)"
+    >
+      Cancel
+    </button>
+  </div>
+</Modal>

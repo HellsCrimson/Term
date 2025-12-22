@@ -2,6 +2,7 @@
   import type { TerminalTab } from '../stores/terminals.svelte';
   import { Dialogs, Events } from '@wailsio/runtime';
   import { LoggingService, SftpService } from '$bindings/term';
+  import { formatBytes } from '$lib/utils/format';
 
   interface Props { tab: TerminalTab }
   let { tab }: Props = $props();
@@ -40,13 +41,7 @@
     }
   }
 
-  function formatSize(bytes: number): string {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
-  }
+  // Use shared formatter
 
   function parentDir(pathStr: string): string {
     if (!pathStr || pathStr === '/') return '/';
@@ -201,7 +196,7 @@
                   <span title={e.path}>📄 {e.name}</span>
                 {/if}
               </td>
-              <td class="px-2 py-1">{e.isDir ? '-' : formatSize(e.size)}</td>
+              <td class="px-2 py-1">{e.isDir ? '-' : formatBytes(e.size)}</td>
               <td class="px-2 py-1">{new Date(e.modTime * 1000).toLocaleString()}</td>
               <td class="px-2 py-1">
                 {#if !e.isDir}

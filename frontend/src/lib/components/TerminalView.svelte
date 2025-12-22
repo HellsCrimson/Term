@@ -8,6 +8,7 @@
   import { themeStore } from '../stores/themeStore';
   import StatusBar from './StatusBar.svelte';
   import RemoteFileBrowser from './RemoteFileBrowser.svelte';
+  import Modal from './common/Modal.svelte';
 
   interface Props {
     tab: TerminalTab;
@@ -252,19 +253,15 @@
 
   <!-- Overlay for remote file browser -->
   {#if tab.sessionType === 'ssh' && showFileOverlay}
-    <div class="absolute inset-0 z-30 flex items-center justify-center" style="background: rgba(0,0,0,0.5)">
-      <div class="rounded-lg shadow-xl overflow-hidden w-[80%] h-[75%] flex flex-col" style="background: var(--bg-secondary); border: 1px solid var(--border-color)">
-        <div class="flex items-center justify-between px-3 py-2" style="border-bottom: 1px solid var(--border-color)">
-          <div class="text-sm font-medium">Remote Files</div>
-          <div class="flex items-center gap-2">
-            <button class="px-2 py-1 text-xs rounded" style="background: var(--bg-tertiary)" onclick={() => showFileOverlay = false} aria-label="Close">Close</button>
-          </div>
-        </div>
-        <div class="flex-1 overflow-hidden">
-          <RemoteFileBrowser {tab} />
-        </div>
+    <Modal show={showFileOverlay} title="Remote Files" onClose={() => showFileOverlay = false} panelClass="w-[80%] h-[75%] flex flex-col">
+      <div class="flex-1 overflow-hidden">
+        <RemoteFileBrowser {tab} />
       </div>
-    </div>
+
+      <div slot="footer" class="flex justify-end mt-4 pt-2" style="border-top: 1px solid var(--border-color)">
+        <button class="px-2 py-1 text-xs rounded" style="background: var(--bg-tertiary)" onclick={() => showFileOverlay = false} aria-label="Close">Close</button>
+      </div>
+    </Modal>
   {/if}
 
   <StatusBar />

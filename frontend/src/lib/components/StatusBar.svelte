@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { Events } from '@wailsio/runtime';
   import { settingsStore } from '../stores/settings.svelte';
+  import { formatBytes, formatRate as utilFormatRate } from '$lib/utils/format';
 
   interface SystemStats {
     cpuPercent: number;
@@ -48,19 +49,8 @@
     }
   });
 
-  function formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
-  }
-
-  function formatRate(bytesPerInterval: number): string {
-    // Convert to bytes per second (interval is 2 seconds)
-    const bytesPerSecond = bytesPerInterval / 2;
-    return formatBytes(bytesPerSecond) + '/s';
-  }
+  // Use shared formatters
+  const formatRate = (bytesPerInterval: number) => utilFormatRate(bytesPerInterval, 2);
 
   function getUsageColor(percent: number): string {
     if (percent < 50) return 'text-green-400';
