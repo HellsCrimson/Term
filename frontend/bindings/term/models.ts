@@ -91,6 +91,59 @@ export class FileList {
     }
 }
 
+export class RecordingOptions {
+    "SessionID": string;
+    "SessionName": string;
+    "SessionType": string;
+    "Cols": number;
+    "Rows": number;
+    "CaptureInput": boolean;
+    "Encrypt": boolean;
+
+    /**
+     * used to derive master key via Argon2
+     */
+    "Passphrase": string;
+
+    /** Creates a new RecordingOptions instance. */
+    constructor($$source: Partial<RecordingOptions> = {}) {
+        if (!("SessionID" in $$source)) {
+            this["SessionID"] = "";
+        }
+        if (!("SessionName" in $$source)) {
+            this["SessionName"] = "";
+        }
+        if (!("SessionType" in $$source)) {
+            this["SessionType"] = "";
+        }
+        if (!("Cols" in $$source)) {
+            this["Cols"] = 0;
+        }
+        if (!("Rows" in $$source)) {
+            this["Rows"] = 0;
+        }
+        if (!("CaptureInput" in $$source)) {
+            this["CaptureInput"] = false;
+        }
+        if (!("Encrypt" in $$source)) {
+            this["Encrypt"] = false;
+        }
+        if (!("Passphrase" in $$source)) {
+            this["Passphrase"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new RecordingOptions instance from a string or object.
+     */
+    static createFrom($$source: any = {}): RecordingOptions {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new RecordingOptions($$parsedSource as Partial<RecordingOptions>);
+    }
+}
+
 /**
  * StartSessionRequest represents the parameters for starting a new terminal session
  */

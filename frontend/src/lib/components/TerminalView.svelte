@@ -9,6 +9,7 @@
   import StatusBar from './StatusBar.svelte';
   import RemoteFileBrowser from './RemoteFileBrowser.svelte';
   import Modal from './common/Modal.svelte';
+  import { Events } from '@wailsio/runtime';
 
   interface Props {
     tab: TerminalTab;
@@ -22,6 +23,8 @@
   let resizeObserver: ResizeObserver | null = null;
   let currentFontSize = $state(settingsStore.settings.fontSize);
   let showFileOverlay = $state(false);
+  let recordActive = $state(false);
+  
 
   // Focus terminal when tab becomes active
   $effect(() => {
@@ -156,10 +159,9 @@
       terminalsStore.writeToSession(tab.backendSessionId, data);
     });
 
-    // Start the backend session if not already running
+    // Start the backend session immediately; user can start recording via button
     if (!tab.exited) {
       try {
-        // Use sessionId (sidebar node) for config, but backendSessionId for PTY
         const config = await sessionsStore.getEffectiveConfig(tab.sessionId);
         await terminalsStore.startSession(
           tab.backendSessionId,
@@ -201,7 +203,36 @@
     if (tab.terminal) {
       tab.terminal = null;
     }
+    // Clean listeners
+    try { unsubStarted?.(); unsubStopped?.(); } catch {}
   });
+
+  async function startRecording() {
+    if (!terminal) return;
+    const cols = terminal.cols;
+    const rows = terminal.rows;
+    const captureInput = settingsStore.settings.recordingDefaultCaptureInput;
+    const encrypt = settingsStore.settings.recordingDefaultEncrypt;
+    let passphrase = '';
+    if (encrypt) {
+      passphrase = prompt('Enter passphrase for recording encryption (Argon2-derived):') || '';
+      if (!passphrase) {
+        const retry = confirm('No passphrase entered. Continue without encryption?');
+        if (!retry) return; // cancel
+        // continue with encrypt=false
+      }
+    }
+    await Events.Emit('recording:start', {
+      sessionId: tab.backendSessionId,
+      sessionName: tab.sessionName,
+      sessionType: tab.sessionType,
+      cols,
+      rows,
+      captureInput,
+      encrypt: encrypt && !!passphrase,
+      passphrase
+    } as any);
+  }
 
   // React to theme changes and update the live terminal instance
   $effect(() => {
@@ -234,24 +265,53 @@
       brightWhite: t.brightWhite
     } as any;
   });
+
+  // Listen to recording status
+  const unsubStarted = Events.On('recording:started', (ev: any) => {
+    if (ev.data?.sessionId === tab.backendSessionId) recordActive = true;
+  });
+  const unsubStopped = Events.On('recording:stopped', (ev: any) => {
+    if (ev.data?.sessionId === tab.backendSessionId) recordActive = false;
+  });
 </script>
 
 <div class="terminal-wrapper h-full flex flex-col relative" style="background: var(--term-background)">
   <!-- Floating actions -->
+<div class="absolute right-2 top-2 flex gap-2 z-20">
   {#if tab.sessionType === 'ssh'}
-    <div class="absolute right-2 top-2 flex gap-2 z-20">
-      <button
-        class="px-2 py-1 text-xs rounded text-white"
-        style="background: var(--accent-blue)"
-        aria-label="Toggle remote files"
-        onclick={() => showFileOverlay = true}
-      >
-        Files
-      </button>
-    </div>
+    <button
+      class="px-2 py-1 text-xs rounded text-white"
+      style="background: var(--accent-blue)"
+      aria-label="Toggle remote files"
+      onclick={() => showFileOverlay = true}
+    >
+      Files
+    </button>
   {/if}
+  {#if !recordActive}
+    <button
+      class="px-2 py-1 text-xs rounded text-white"
+      style="background: var(--accent-blue)"
+      aria-label="Start recording"
+      onclick={startRecording}
+    >
+      Start Rec
+    </button>
+  {:else}
+    <button
+      class="px-2 py-1 text-xs rounded text-white"
+      style="background: var(--accent-blue)"
+      aria-label="Stop recording"
+      onclick={() => Events.Emit('recording:stop', { sessionId: tab.backendSessionId } as any)}
+    >
+      Stop Rec
+    </button>
+  {/if}
+</div>
 
   <div class="terminal-container flex-1 bg-transparent" bind:this={terminalElement}></div>
+
+  
 
   <!-- Overlay for remote file browser -->
   {#if tab.sessionType === 'ssh' && showFileOverlay}

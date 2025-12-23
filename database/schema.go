@@ -85,4 +85,33 @@ CREATE TRIGGER IF NOT EXISTS update_known_hosts_timestamp
 BEGIN
     UPDATE known_hosts SET last_seen = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
+
+-- Recordings metadata
+CREATE TABLE IF NOT EXISTS recordings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    backend_session_id TEXT NOT NULL,
+    session_name TEXT NOT NULL,
+    session_type TEXT NOT NULL,
+    started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ended_at DATETIME,
+    format TEXT NOT NULL,
+    path TEXT NOT NULL,
+    size INTEGER DEFAULT 0,
+    encrypted INTEGER NOT NULL DEFAULT 0,
+    capture_input INTEGER NOT NULL DEFAULT 0
+);
+
+-- Encrypted per-recording file keys
+CREATE TABLE IF NOT EXISTS recording_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    recording_id INTEGER NOT NULL,
+    enc_key BLOB NOT NULL,       -- file key encrypted under master key
+    enc_key_nonce BLOB NOT NULL, -- nonce used for key encryption
+    alg TEXT NOT NULL,           -- e.g., AES-256-GCM
+    kdf TEXT NOT NULL,           -- e.g., argon2id
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (recording_id) REFERENCES recordings(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_recordings_session ON recordings(backend_session_id);
 `

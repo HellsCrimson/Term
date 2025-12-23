@@ -12,6 +12,20 @@ import type * as main$0 from "../../../../../term/models.js";
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
+            "recording:delete": { [_: string]: any };
+            "recording:list": { [_: string]: any };
+            "recording:list:error": { [_: string]: any };
+            "recording:list:request": { [_: string]: any };
+            "recording:replay:ended": { [_: string]: any };
+            "recording:replay:header": { [_: string]: any };
+            "recording:replay:output": { [_: string]: any };
+            "recording:replay:resize": { [_: string]: any };
+            "recording:replay:start": { [_: string]: any };
+            "recording:replay:stop": { [_: string]: any };
+            "recording:start": { [_: string]: any };
+            "recording:started": { [_: string]: any };
+            "recording:stop": { [_: string]: any };
+            "recording:stopped": { [_: string]: any };
             "ssh:hostkey_prompt": { [_: string]: any };
             "ssh:hostkey_response": { [_: string]: any };
             "ssh:known_hosts:delete": { [_: string]: any };

@@ -29,7 +29,23 @@ func init() {
 	application.RegisterEvent[map[string]interface{}]("ssh:hostkey_response")
 	application.RegisterEvent[map[string]interface{}]("ssh:known_hosts:list:request")
 	application.RegisterEvent[map[string]interface{}]("ssh:known_hosts:list")
-	application.RegisterEvent[map[string]interface{}]("ssh:known_hosts:delete")
+    application.RegisterEvent[map[string]interface{}]("ssh:known_hosts:delete")
+
+    // Recording events
+    application.RegisterEvent[map[string]interface{}]("recording:start")
+    application.RegisterEvent[map[string]interface{}]("recording:stop")
+    application.RegisterEvent[map[string]interface{}]("recording:started")
+    application.RegisterEvent[map[string]interface{}]("recording:stopped")
+    application.RegisterEvent[map[string]interface{}]("recording:list:request")
+    application.RegisterEvent[map[string]interface{}]("recording:list")
+    application.RegisterEvent[map[string]interface{}]("recording:delete")
+    application.RegisterEvent[map[string]interface{}]("recording:list:error")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:start")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:stop")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:header")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:output")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:resize")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:ended")
 }
 
 func main() {
@@ -73,19 +89,23 @@ func main() {
 		},
 	})
 
-	// Host key service for SSH verification
-	hostKeyService := NewHostKeyService(app, db)
+    // Host key service for SSH verification
+    hostKeyService := NewHostKeyService(app, db)
 
-	// Create terminal service (needs app instance for events and host key verification)
-	terminalService := NewTerminalService(app, hostKeyService)
-	app.RegisterService(application.NewService(terminalService))
+    // Recording service for binary terminal recordings
+    recordingService := NewRecordingService(app, db)
+    app.RegisterService(application.NewService(recordingService))
+
+    // Create terminal service (needs app instance for events and host key verification and recorder)
+    terminalService := NewTerminalService(app, hostKeyService, recordingService)
+    app.RegisterService(application.NewService(terminalService))
 
 	sftpService := NewSFTPService(app, terminalService)
 	app.RegisterService(application.NewService(sftpService))
 
-	// Create theme service (needs app context)
-	themeService := NewThemeService(app.Context(), settingsService)
-	app.RegisterService(application.NewService(themeService))
+    // Create theme service (needs app context)
+    themeService := NewThemeService(app.Context(), settingsService)
+    app.RegisterService(application.NewService(themeService))
 
 	// Create and start system stats service (needs terminal service to check session types)
 	systemStatsService := NewSystemStatsService(terminalService)

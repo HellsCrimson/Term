@@ -13,12 +13,17 @@
   import * as LoggingService from '$bindings/term/loggingservice';
   import AlertHost from '$lib/components/common/AlertHost.svelte';
   import { Events } from '@wailsio/runtime';
+  import RecordingsDialog from '$lib/components/RecordingsDialog.svelte';
+  import ReplayViewer from '$lib/components/ReplayViewer.svelte';
 
   let sidebarWidth = $state(250);
   let resizing = $state(false);
   let ready = $state(false);
   let showNewSessionDialog = $state(false);
   let showSettingsDialog = $state(false);
+  let showRecordingsDialog = $state(false);
+  let showReplayViewer = $state(false);
+  let currentReplayId = $state<string | null>(null);
   let lastKeyPressed = $state('');
   // SSH host key prompt state
   let showHostKeyPrompt = $state(false);
@@ -54,6 +59,23 @@
 
     // Setup keyboard shortcuts on document
     document.addEventListener('keydown', handleKeyDown, true);
+
+    // Open replay viewer when a replay starts emitting
+    Events.On('recording:replay:header', (ev: any) => {
+      LoggingService.Log('[App] replay header received, opening viewer', 'DEBUG');
+      currentReplayId = ev?.data?.replayId || null;
+      showReplayViewer = true;
+    });
+
+    // Also open viewer immediately when a replay is requested
+    Events.On('recording:replay:start', (_ev: any) => {
+      LoggingService.Log('[App] replay start received, opening viewer', 'DEBUG');
+      // Stop previous replay to avoid double playback
+      if (currentReplayId) {
+        Events.Emit('recording:replay:stop', { replayId: currentReplayId } as any);
+      }
+      showReplayViewer = true;
+    });
 
     // Listen for SSH host key verification prompts
     Events.On('ssh:hostkey_prompt', (event: any) => {
@@ -272,6 +294,15 @@
               >
                 ⚙️
               </button>
+              <button
+                class="px-2 py-1 text-sm rounded transition-colors"
+                style="background: var(--bg-tertiary)"
+                onclick={() => showRecordingsDialog = true}
+                aria-label="Open recordings"
+                title="Recordings"
+              >
+                ⏺️
+              </button>
             </div>
           </div>
           {#if lastKeyPressed}
@@ -322,6 +353,10 @@
 
   <!-- Settings Dialog -->
   <SettingsDialog show={showSettingsDialog} onClose={() => showSettingsDialog = false} />
+  <RecordingsDialog show={showRecordingsDialog} onClose={() => showRecordingsDialog = false} />
+  {#if showReplayViewer}
+    <ReplayViewer show={true} onClose={() => showReplayViewer = false} replayId={currentReplayId} />
+  {/if}
 
   {#if showHostKeyPrompt && hostKeyPrompt}
     <div class="fixed inset-0 z-[1100] flex items-center justify-center" style="background: rgba(0,0,0,0.5)">

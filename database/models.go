@@ -51,6 +51,32 @@ type KnownHost struct {
     LastSeen    time.Time `json:"lastSeen"`
 }
 
+// Recording represents a stored session recording metadata
+type Recording struct {
+    ID                int       `json:"id"`
+    BackendSessionID  string    `json:"backendSessionId"`
+    SessionName       string    `json:"sessionName"`
+    SessionType       string    `json:"sessionType"`
+    StartedAt         time.Time `json:"startedAt"`
+    EndedAt           *time.Time `json:"endedAt"`
+    Format            string    `json:"format"` // termrec, termrec+gcm
+    Path              string    `json:"path"`
+    Size              int64     `json:"size"`
+    Encrypted         bool      `json:"encrypted"`
+    CaptureInput      bool      `json:"captureInput"`
+}
+
+// RecordingKey stores the encrypted per-recording file key
+type RecordingKey struct {
+    ID            int       `json:"id"`
+    RecordingID   int       `json:"recordingId"`
+    EncKey        []byte    `json:"encKey"`
+    EncKeyNonce   []byte    `json:"encKeyNonce"`
+    Alg           string    `json:"alg"`
+    KDF           string    `json:"kdf"`
+    CreatedAt     time.Time `json:"createdAt"`
+}
+
 // GetAllSessions retrieves all session nodes
 func (db *DB) GetAllSessions() ([]SessionNode, error) {
 	rows, err := db.conn.Query(`
@@ -472,5 +498,88 @@ func (db *DB) DeleteKnownHost(id int) error {
 // DeleteKnownHostByHostPort removes a known host by host and port
 func (db *DB) DeleteKnownHostByHostPort(host string, port int) error {
     _, err := db.conn.Exec(`DELETE FROM known_hosts WHERE host = ? AND port = ?`, host, port)
+    return err
+}
+
+// CreateRecording inserts a new recording row
+func (db *DB) CreateRecording(r *Recording) (int, error) {
+    res, err := db.conn.Exec(`
+        INSERT INTO recordings (backend_session_id, session_name, session_type, started_at, format, path, size, encrypted, capture_input)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?)
+    `, r.BackendSessionID, r.SessionName, r.SessionType, r.Format, r.Path, r.Size, boolToInt(r.Encrypted), boolToInt(r.CaptureInput))
+    if err != nil {
+        return 0, err
+    }
+    id64, _ := res.LastInsertId()
+    return int(id64), nil
+}
+
+// FinishRecording updates end time and size
+func (db *DB) FinishRecording(id int, size int64) error {
+    _, err := db.conn.Exec(`
+        UPDATE recordings SET ended_at = CURRENT_TIMESTAMP, size = ? WHERE id = ?
+    `, size, id)
+    return err
+}
+
+// GetRecording returns a recording by id
+func (db *DB) GetRecording(id int) (*Recording, error) {
+    var r Recording
+    var ended sql.NullTime
+    var enc, cap int
+    err := db.conn.QueryRow(`
+        SELECT id, backend_session_id, session_name, session_type, started_at, ended_at, format, path, size, encrypted, capture_input
+        FROM recordings WHERE id = ?
+    `, id).Scan(&r.ID, &r.BackendSessionID, &r.SessionName, &r.SessionType, &r.StartedAt, &ended, &r.Format, &r.Path, &r.Size, &enc, &cap)
+    if err != nil {
+        return nil, err
+    }
+    if ended.Valid {
+        r.EndedAt = &ended.Time
+    }
+    r.Encrypted = enc != 0
+    r.CaptureInput = cap != 0
+    return &r, nil
+}
+
+// SaveRecordingKey stores the encrypted file key info
+func (db *DB) SaveRecordingKey(recID int, encKey, nonce []byte, alg, kdf string) error {
+    _, err := db.conn.Exec(`
+        INSERT INTO recording_keys (recording_id, enc_key, enc_key_nonce, alg, kdf)
+        VALUES (?, ?, ?, ?, ?)
+    `, recID, encKey, nonce, alg, kdf)
+    return err
+}
+
+func boolToInt(b bool) int { if b { return 1 } ; return 0 }
+
+// ListRecordings returns all recordings ordered by started_at desc
+func (db *DB) ListRecordings() ([]Recording, error) {
+    rows, err := db.conn.Query(`
+        SELECT id, backend_session_id, session_name, session_type, started_at, ended_at, format, path, size, encrypted, capture_input
+        FROM recordings
+        ORDER BY started_at DESC
+    `)
+    if err != nil { return nil, err }
+    defer rows.Close()
+    var res []Recording
+    for rows.Next() {
+        var r Recording
+        var ended sql.NullTime
+        var enc, cap int
+        if err := rows.Scan(&r.ID, &r.BackendSessionID, &r.SessionName, &r.SessionType, &r.StartedAt, &ended, &r.Format, &r.Path, &r.Size, &enc, &cap); err != nil {
+            return nil, err
+        }
+        if ended.Valid { r.EndedAt = &ended.Time }
+        r.Encrypted = enc != 0
+        r.CaptureInput = cap != 0
+        res = append(res, r)
+    }
+    return res, rows.Err()
+}
+
+// DeleteRecording removes recording by id (and its key). Caller should delete file too.
+func (db *DB) DeleteRecording(id int) error {
+    _, err := db.conn.Exec(`DELETE FROM recordings WHERE id = ?`, id)
     return err
 }

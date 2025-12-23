@@ -424,6 +424,27 @@
             {/if}
           </div>
         </div>
+
+        <!-- Recording Defaults -->
+        <div style="display: {activeTab === 'security' ? 'block' : 'none'}">
+          <h3 class="text-lg font-medium mb-3">Recording Defaults</h3>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium">Capture input by default</label>
+                <p class="text-xs" style="color: var(--text-muted)">Keystrokes may include sensitive data; off by default</p>
+              </div>
+              <ToggleSwitch checked={settingsStore.settings.recordingDefaultCaptureInput} ariaLabel="Default capture input" on:change={(e) => settingsStore.setRecordingDefaultCaptureInput(e.detail)} />
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium">Encrypt recordings at rest by default</label>
+                <p class="text-xs" style="color: var(--text-muted)">AES-GCM per-file key; passphrase will be requested when starting</p>
+              </div>
+              <ToggleSwitch checked={settingsStore.settings.recordingDefaultEncrypt} ariaLabel="Default encrypt recordings" on:change={(e) => settingsStore.setRecordingDefaultEncrypt(e.detail)} />
+            </div>
+          </div>
+        </div>
   </div>
 
   {#snippet footer()}

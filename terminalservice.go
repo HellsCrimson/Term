@@ -20,6 +20,7 @@ type TerminalService struct {
     sessions map[string]*TerminalSession
     mu       sync.RWMutex
     hostKeys *HostKeyService
+    recorder *RecordingService
 }
 
 type TerminalSession struct {
@@ -58,11 +59,12 @@ type StartSessionRequest struct {
 }
 
 // NewTerminalService creates a new terminal service
-func NewTerminalService(app *application.App, hostKeys *HostKeyService) *TerminalService {
+func NewTerminalService(app *application.App, hostKeys *HostKeyService, recorder *RecordingService) *TerminalService {
     return &TerminalService{
         app:      app,
         sessions: make(map[string]*TerminalSession),
         hostKeys: hostKeys,
+        recorder: recorder,
     }
 }
 
@@ -535,10 +537,14 @@ func (t *TerminalService) streamPipeOutput(session *TerminalSession) {
 					if runtime.GOOS == "windows" && !session.IsSSH {
 						data = normalizeWindowsOutput(data)
 					}
-					t.app.Event.Emit("terminal:data", map[string]interface{}{
-						"id":   session.ID,
-						"data": data,
-					})
+                // Append to recorder if active
+                if t.recorder != nil {
+                    t.recorder.AppendOutput(session.ID, []byte(data))
+                }
+                t.app.Event.Emit("terminal:data", map[string]interface{}{
+                    "id":   session.ID,
+                    "data": data,
+                })
 				}
 			}
 		}()
@@ -591,12 +597,15 @@ func (t *TerminalService) streamSSHOutput(session *TerminalSession, stdout, stde
 				break
 			}
 
-			if n > 0 {
-				t.app.Event.Emit("terminal:data", map[string]interface{}{
-					"id":   session.ID,
-					"data": string(buf[:n]),
-				})
-			}
+            if n > 0 {
+                if t.recorder != nil {
+                    t.recorder.AppendOutput(session.ID, buf[:n])
+                }
+                t.app.Event.Emit("terminal:data", map[string]interface{}{
+                    "id":   session.ID,
+                    "data": string(buf[:n]),
+                })
+            }
 		}
 	}()
 
@@ -615,14 +624,17 @@ func (t *TerminalService) streamSSHOutput(session *TerminalSession, stdout, stde
 				break
 			}
 
-			if n > 0 {
-				t.app.Event.Emit("terminal:data", map[string]interface{}{
-					"id":   session.ID,
-					"data": string(buf[:n]),
-				})
-			}
-		}
-	}()
+            if n > 0 {
+                if t.recorder != nil {
+                    t.recorder.AppendOutput(session.ID, buf[:n])
+                }
+                t.app.Event.Emit("terminal:data", map[string]interface{}{
+                    "id":   session.ID,
+                    "data": string(buf[:n]),
+                })
+            }
+        }
+    }()
 }
 
 // monitorExit monitors when the process exits
@@ -649,11 +661,14 @@ func (t *TerminalService) monitorExit(session *TerminalSession) {
 	session.Running = false
 	session.mu.Unlock()
 
-	// Emit exit event
-	t.app.Event.Emit("terminal:exit", map[string]interface{}{
-		"id":       session.ID,
-		"exitCode": exitCode,
-	})
+    // Emit exit event
+    t.app.Event.Emit("terminal:exit", map[string]interface{}{
+        "id":       session.ID,
+        "exitCode": exitCode,
+    })
+    if t.recorder != nil {
+        _ = t.recorder.Stop(session.ID)
+    }
 }
 
 // monitorSSHExit monitors when the SSH session exits
@@ -676,11 +691,14 @@ func (t *TerminalService) monitorSSHExit(session *TerminalSession) {
 		session.SSHStdin.Close()
 	}
 
-	// Emit exit event
-	t.app.Event.Emit("terminal:exit", map[string]interface{}{
-		"id":       session.ID,
-		"exitCode": exitCode,
-	})
+    // Emit exit event
+    t.app.Event.Emit("terminal:exit", map[string]interface{}{
+        "id":       session.ID,
+        "exitCode": exitCode,
+    })
+    if t.recorder != nil {
+        _ = t.recorder.Stop(session.ID)
+    }
 }
 
 // WriteToSession writes data to a terminal session
@@ -700,28 +718,37 @@ func (t *TerminalService) WriteToSession(id string, data string) error {
 		return fmt.Errorf("session %s is not running", id)
 	}
 
-	if session.IsSSH {
-		// Write to SSH session stdin
-		if session.SSHStdin == nil {
-			return fmt.Errorf("SSH stdin not available")
-		}
-		_, err := session.SSHStdin.Write([]byte(data))
-		return err
-	}
+    if session.IsSSH {
+        // Write to SSH session stdin
+        if session.SSHStdin == nil {
+            return fmt.Errorf("SSH stdin not available")
+        }
+        if t.recorder != nil {
+            t.recorder.AppendInput(id, []byte(data))
+        }
+        _, err := session.SSHStdin.Write([]byte(data))
+        return err
+    }
 
 	// Local sessions
 	if runtime.GOOS == "windows" {
 		data = normalizeWindowsInput(data)
 	}
-	if session.PTY != nil {
-		_, err := session.PTY.Write([]byte(data))
-		return err
-	}
-	if session.Stdin != nil {
-		_, err := session.Stdin.Write([]byte(data))
-		return err
-	}
-	return fmt.Errorf("no writer available for session %s", id)
+    if session.PTY != nil {
+        if t.recorder != nil {
+            t.recorder.AppendInput(id, []byte(data))
+        }
+        _, err := session.PTY.Write([]byte(data))
+        return err
+    }
+    if session.Stdin != nil {
+        if t.recorder != nil {
+            t.recorder.AppendInput(id, []byte(data))
+        }
+        _, err := session.Stdin.Write([]byte(data))
+        return err
+    }
+    return fmt.Errorf("no writer available for session %s", id)
 }
 
 // normalizeWindowsInput ensures CRLF newlines for Windows console apps.
@@ -783,21 +810,33 @@ func (t *TerminalService) ResizeSession(id string, cols uint16, rows uint16) err
 		return fmt.Errorf("session %s is not running", id)
 	}
 
-	if session.IsSSH {
-		// Send window change request for SSH session
-		return session.SSHSession.WindowChange(int(rows), int(cols))
-	}
+    if session.IsSSH {
+        // Send window change request for SSH session
+        err := session.SSHSession.WindowChange(int(rows), int(cols))
+        if err == nil && t.recorder != nil {
+            t.recorder.AppendResize(id, cols, rows)
+        }
+        return err
+    }
 	// Prefer platform-specific resizer if available (e.g., ConPTY)
-	if session.ResizePTY != nil {
-		return session.ResizePTY(cols, rows)
-	}
+    if session.ResizePTY != nil {
+        err := session.ResizePTY(cols, rows)
+        if err == nil && t.recorder != nil {
+            t.recorder.AppendResize(id, cols, rows)
+        }
+        return err
+    }
 	// If we have a real PTY (Unix), resize it
-	if session.PTY != nil {
-		return pty.Setsize(session.PTY, &pty.Winsize{
-			Rows: rows,
-			Cols: cols,
-		})
-	}
+    if session.PTY != nil {
+        err := pty.Setsize(session.PTY, &pty.Winsize{
+            Rows: rows,
+            Cols: cols,
+        })
+        if err == nil && t.recorder != nil {
+            t.recorder.AppendResize(id, cols, rows)
+        }
+        return err
+    }
 	// No-op on plain pipes fallback
 	return nil
 }

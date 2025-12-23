@@ -12,6 +12,20 @@ import * as main$0 from "../../../../../term/models.js";
 
 function configure() {
     Object.freeze(Object.assign($Create.Events, {
+        "recording:delete": $$createType0,
+        "recording:list": $$createType0,
+        "recording:list:error": $$createType0,
+        "recording:list:request": $$createType0,
+        "recording:replay:ended": $$createType0,
+        "recording:replay:header": $$createType0,
+        "recording:replay:output": $$createType0,
+        "recording:replay:resize": $$createType0,
+        "recording:replay:start": $$createType0,
+        "recording:replay:stop": $$createType0,
+        "recording:start": $$createType0,
+        "recording:started": $$createType0,
+        "recording:stop": $$createType0,
+        "recording:stopped": $$createType0,
         "ssh:hostkey_prompt": $$createType0,
         "ssh:hostkey_response": $$createType0,
         "ssh:known_hosts:delete": $$createType0,

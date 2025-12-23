@@ -163,6 +163,8 @@ func (db *DB) bootstrap() error {
 		"auto_launch":        true,
 		"tab_snapshots":      "[]",
 		"last_selected_node": "",
+		"recording_default_capture_input": false,
+		"recording_default_encrypt":       true,
 	}
 
 	for key, value := range defaultSettings {
