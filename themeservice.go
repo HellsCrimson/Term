@@ -8,6 +8,7 @@ import (
     "os"
     "path/filepath"
     "io/fs"
+    "strings"
 )
 
 type ThemeColors struct {
@@ -101,21 +102,37 @@ func NewThemeService(ctx context.Context, settingsSvc *SettingsService) *ThemeSe
 func (s *ThemeService) GetAllThemes() ([]Theme, error) {
     // Ensure defaults are present if this is first run
     _ = s.bootstrapDefaultThemes()
-    themes := []Theme{}
 
-	// Load built-in themes
-	builtInThemes, err := s.loadThemesFromDirectory(s.builtInPath)
-	if err == nil {
-		themes = append(themes, builtInThemes...)
-	}
+    // Load built-in and user themes
+    builtInThemes, _ := s.loadThemesFromDirectory(s.builtInPath)
+    userThemes, _ := s.loadThemesFromDirectory(s.userThemePath)
 
-	// Load user themes
-	userThemes, err := s.loadThemesFromDirectory(s.userThemePath)
-	if err == nil {
-		themes = append(themes, userThemes...)
-	}
+    // Deduplicate by ID (case-insensitive). User themes override built-in on conflict.
+    byID := make(map[string]Theme)
+    order := []string{}
+    add := func(list []Theme) {
+        for _, t := range list {
+            key := strings.ToLower(strings.TrimSpace(t.ID))
+            if key == "" {
+                // Fallback to name if ID missing (shouldn't happen for built-ins)
+                key = "name:" + strings.ToLower(strings.TrimSpace(t.Name))
+            }
+            if _, exists := byID[key]; !exists {
+                order = append(order, key)
+            }
+            // Insert/override (user themes processed later will override built-in)
+            byID[key] = t
+        }
+    }
+    add(builtInThemes)
+    add(userThemes)
 
-	return themes, nil
+    // Rebuild ordered list
+    result := make([]Theme, 0, len(byID))
+    for _, k := range order {
+        result = append(result, byID[k])
+    }
+    return result, nil
 }
 
 // GetTheme returns a specific theme by ID
@@ -180,16 +197,29 @@ func (s *ThemeService) ImportTheme(sourcePath string) error {
 		return fmt.Errorf("failed to read theme file: %w", err)
 	}
 
-	// Parse theme
-	var theme Theme
-	if err := json.Unmarshal(data, &theme); err != nil {
-		return fmt.Errorf("failed to parse theme: %w", err)
-	}
+    // Parse theme
+    var theme Theme
+    if err := json.Unmarshal(data, &theme); err != nil {
+        return fmt.Errorf("failed to parse theme: %w", err)
+    }
 
-	// Validate theme
-	if theme.ID == "" || theme.Name == "" {
-		return fmt.Errorf("invalid theme: missing ID or name")
-	}
+    // Validate theme
+    if theme.ID == "" || theme.Name == "" {
+        return fmt.Errorf("invalid theme: missing ID or name")
+    }
+
+    // Enforce uniqueness by ID and Name (case-insensitive) across all themes
+    existing, _ := s.GetAllThemes()
+    idLower := strings.ToLower(strings.TrimSpace(theme.ID))
+    nameLower := strings.ToLower(strings.TrimSpace(theme.Name))
+    for _, t := range existing {
+        if strings.ToLower(strings.TrimSpace(t.ID)) == idLower {
+            return fmt.Errorf("a theme with the same ID already exists: %s", theme.ID)
+        }
+        if strings.ToLower(strings.TrimSpace(t.Name)) == nameLower {
+            return fmt.Errorf("a theme with the same name already exists: %s", theme.Name)
+        }
+    }
 
 	// Copy to user themes directory
 	destPath := filepath.Join(s.userThemePath, theme.ID+".json")
