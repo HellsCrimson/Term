@@ -1,24 +1,25 @@
 package main
 
 import (
-	"fmt"
-	"io"
-	"os"
-	"os/exec"
-	"runtime"
-	"strings"
-	"sync"
-	"time"
+    "fmt"
+    "io"
+    "os"
+    "os/exec"
+    "runtime"
+    "strings"
+    "sync"
+    "time"
 
-	"github.com/creack/pty"
-	"github.com/wailsapp/wails/v3/pkg/application"
-	"golang.org/x/crypto/ssh"
+    "github.com/creack/pty"
+    "github.com/wailsapp/wails/v3/pkg/application"
+    "golang.org/x/crypto/ssh"
 )
 
 type TerminalService struct {
-	app      *application.App
-	sessions map[string]*TerminalSession
-	mu       sync.RWMutex
+    app      *application.App
+    sessions map[string]*TerminalSession
+    mu       sync.RWMutex
+    hostKeys *HostKeyService
 }
 
 type TerminalSession struct {
@@ -57,11 +58,12 @@ type StartSessionRequest struct {
 }
 
 // NewTerminalService creates a new terminal service
-func NewTerminalService(app *application.App) *TerminalService {
-	return &TerminalService{
-		app:      app,
-		sessions: make(map[string]*TerminalSession),
-	}
+func NewTerminalService(app *application.App, hostKeys *HostKeyService) *TerminalService {
+    return &TerminalService{
+        app:      app,
+        sessions: make(map[string]*TerminalSession),
+        hostKeys: hostKeys,
+    }
 }
 
 // StartSession starts a new terminal session
@@ -255,6 +257,15 @@ func (t *TerminalService) getShellCommand(sessionType string, config map[string]
 	}
 }
 
+// getHostKeyCallback returns the configured host key verification callback
+func (t *TerminalService) getHostKeyCallback() ssh.HostKeyCallback {
+    if t.hostKeys != nil {
+        return t.hostKeys.HostKeyCallback()
+    }
+    // Fallback: insecure (should not happen)
+    return ssh.InsecureIgnoreHostKey()
+}
+
 // findShell tries to find a shell executable from a list of paths
 func (t *TerminalService) findShell(paths []string, args []string) (string, []string, error) {
 	for _, path := range paths {
@@ -355,16 +366,16 @@ func (t *TerminalService) startSSHSession(req StartSessionRequest) error {
 		return fmt.Errorf("unsupported SSH auth method: %s", authMethod)
 	}
 
-	// Create SSH client config
-	config := &ssh.ClientConfig{
-		User:            username,
-		Auth:            auth,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // TODO: Add proper host key verification
-	}
+    // Create SSH client config
+    config := &ssh.ClientConfig{
+        User:            username,
+        Auth:            auth,
+        HostKeyCallback: t.getHostKeyCallback(),
+    }
 
 	// Connect to SSH server
-	addr := fmt.Sprintf("%s:%s", host, port)
-	client, err := ssh.Dial("tcp", addr, config)
+    addr := fmt.Sprintf("%s:%s", host, port)
+    client, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
 		return fmt.Errorf("failed to connect to SSH server: %w", err)
 	}

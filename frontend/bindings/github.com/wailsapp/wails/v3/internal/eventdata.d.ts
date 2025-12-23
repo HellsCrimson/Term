@@ -12,6 +12,11 @@ import type * as main$0 from "../../../../../term/models.js";
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
+            "ssh:hostkey_prompt": { [_: string]: any };
+            "ssh:hostkey_response": { [_: string]: any };
+            "ssh:known_hosts:delete": { [_: string]: any };
+            "ssh:known_hosts:list": { [_: string]: any };
+            "ssh:known_hosts:list:request": { [_: string]: any };
             "system:stats": main$0.SystemStats;
             "terminal:data": { [_: string]: any };
             "terminal:error": { [_: string]: any };

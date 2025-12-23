@@ -23,6 +23,13 @@ func init() {
 
 	// Register system stats event
 	application.RegisterEvent[SystemStats]("system:stats")
+
+	// SSH host key verification events
+	application.RegisterEvent[map[string]interface{}]("ssh:hostkey_prompt")
+	application.RegisterEvent[map[string]interface{}]("ssh:hostkey_response")
+	application.RegisterEvent[map[string]interface{}]("ssh:known_hosts:list:request")
+	application.RegisterEvent[map[string]interface{}]("ssh:known_hosts:list")
+	application.RegisterEvent[map[string]interface{}]("ssh:known_hosts:delete")
 }
 
 func main() {
@@ -62,8 +69,11 @@ func main() {
 		},
 	})
 
-	// Create terminal service (needs app instance for events)
-	terminalService := NewTerminalService(app)
+	// Host key service for SSH verification
+	hostKeyService := NewHostKeyService(app, db)
+
+	// Create terminal service (needs app instance for events and host key verification)
+	terminalService := NewTerminalService(app, hostKeyService)
 	app.RegisterService(application.NewService(terminalService))
 
 	sftpService := NewSFTPService(app, terminalService)

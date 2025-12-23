@@ -12,6 +12,7 @@
   import { themeStore } from './lib/stores/themeStore';
   import * as LoggingService from '$bindings/term/loggingservice';
   import AlertHost from '$lib/components/common/AlertHost.svelte';
+  import { Events } from '@wailsio/runtime';
 
   let sidebarWidth = $state(250);
   let resizing = $state(false);
@@ -19,6 +20,9 @@
   let showNewSessionDialog = $state(false);
   let showSettingsDialog = $state(false);
   let lastKeyPressed = $state('');
+  // SSH host key prompt state
+  let showHostKeyPrompt = $state(false);
+  let hostKeyPrompt: any = $state(null);
 
   onMount(() => {
     console.log('App mounting - loading sessions and settings');
@@ -50,6 +54,13 @@
 
     // Setup keyboard shortcuts on document
     document.addEventListener('keydown', handleKeyDown, true);
+
+    // Listen for SSH host key verification prompts
+    Events.On('ssh:hostkey_prompt', (event: any) => {
+      const data = event.data || {};
+      hostKeyPrompt = data;
+      showHostKeyPrompt = true;
+    });
 
     // Return cleanup function
     return () => {
@@ -211,6 +222,20 @@
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
   }
+
+  async function respondToHostKeyPrompt(action: 'accept_once' | 'trust' | 'reject') {
+    if (!hostKeyPrompt) return;
+    const payload = { id: hostKeyPrompt.id, action };
+    await Events.Emit('ssh:hostkey_response', payload);
+    showHostKeyPrompt = false;
+    hostKeyPrompt = null;
+  }
+
+  function hostWithPort(h: string, p: number | string) {
+    const hs = String(h);
+    const ps = String(p);
+    return hs.endsWith(':' + ps) ? hs : `${hs}:${ps}`;
+  }
 </script>
 
 {#if !ready}
@@ -297,4 +322,34 @@
 
   <!-- Settings Dialog -->
   <SettingsDialog show={showSettingsDialog} onClose={() => showSettingsDialog = false} />
+
+  {#if showHostKeyPrompt && hostKeyPrompt}
+    <div class="fixed inset-0 z-[1100] flex items-center justify-center" style="background: rgba(0,0,0,0.5)">
+      <div class="w-[540px] max-w-[90%] rounded shadow-lg p-4"
+           style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color)">
+        <h3 class="text-lg font-semibold mb-2">
+          {hostKeyPrompt.status === 'mismatch' ? 'Host Key Changed' : 'Unknown Host' }
+        </h3>
+        <div class="text-sm space-y-1 mb-3">
+          <div><span class="font-medium">Host:</span> {hostWithPort(hostKeyPrompt.host, hostKeyPrompt.port)}</div>
+          <div><span class="font-medium">Key Type:</span> {hostKeyPrompt.keyType}</div>
+          <div><span class="font-medium">Fingerprint:</span> {hostKeyPrompt.fingerprint}</div>
+          {#if hostKeyPrompt.status === 'mismatch'}
+            <div class="text-yellow-400"><span class="font-medium">Previous:</span> {hostKeyPrompt.oldFingerprint}</div>
+          {/if}
+          {#if hostKeyPrompt.status === 'mismatch'}
+            <p class="text-xs mt-2" style="color: var(--text-muted)">Warning: The host key has changed. This may indicate a man-in-the-middle attack, or the host was reinstalled.</p>
+          {:else}
+            <p class="text-xs mt-2" style="color: var(--text-muted)">First time connecting to this host. Verify the fingerprint with the server admin.</p>
+          {/if}
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--border-color)">
+          <button class="px-3 py-1.5 rounded" style="background: var(--bg-tertiary)" onclick={() => respondToHostKeyPrompt('reject')}>Cancel</button>
+          <button class="px-3 py-1.5 rounded" style="background: var(--bg-tertiary)" onclick={() => respondToHostKeyPrompt('accept_once')}>Accept Once</button>
+          <button class="px-3 py-1.5 rounded text-white" style="background: var(--accent-green)" onclick={() => respondToHostKeyPrompt('trust')}>Trust and Save</button>
+        </div>
+      </div>
+    </div>
+  {/if}
 {/if}

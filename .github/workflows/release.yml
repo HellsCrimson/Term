@@ -191,7 +191,7 @@ jobs:
             gh release create "$TAG" \
               release-assets/* \
               --title "$TITLE" \
-              $PRERELEASE \
+              "$PRERELEASE" \
               --generate-notes
           else
             echo "Tag $TAG does not exist, creating new tag and release"
@@ -199,6 +199,6 @@ jobs:
               release-assets/* \
               --title "$TITLE" \
               --target "${{ github.sha }}" \
-              $PRERELEASE \
+              "$PRERELEASE" \
               --generate-notes
           fi

@@ -12,15 +12,20 @@ import * as main$0 from "../../../../../term/models.js";
 
 function configure() {
     Object.freeze(Object.assign($Create.Events, {
-        "system:stats": $$createType0,
-        "terminal:data": $$createType1,
-        "terminal:error": $$createType1,
-        "terminal:exit": $$createType1,
+        "ssh:hostkey_prompt": $$createType0,
+        "ssh:hostkey_response": $$createType0,
+        "ssh:known_hosts:delete": $$createType0,
+        "ssh:known_hosts:list": $$createType0,
+        "ssh:known_hosts:list:request": $$createType0,
+        "system:stats": $$createType1,
+        "terminal:data": $$createType0,
+        "terminal:error": $$createType0,
+        "terminal:exit": $$createType0,
     }));
 }
 
 // Private type creation functions
-const $$createType0 = main$0.SystemStats.createFrom;
-const $$createType1 = $Create.Map($Create.Any, $Create.Any);
+const $$createType0 = $Create.Map($Create.Any, $Create.Any);
+const $$createType1 = main$0.SystemStats.createFrom;
 
 configure();

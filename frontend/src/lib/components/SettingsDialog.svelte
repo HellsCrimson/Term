@@ -5,6 +5,7 @@
   import { alertsStore } from '$lib/stores/alerts.svelte';
   import Modal from './common/Modal.svelte';
   import ToggleSwitch from './common/ToggleSwitch.svelte';
+  import { Events } from '@wailsio/runtime';
 
   interface Props {
     show: boolean;
@@ -27,6 +28,15 @@
   let importPath = $state('');
   let exportPath = $state('');
   let exporting = $state(false);
+
+  // Known hosts management state
+  let knownHosts: Array<any> = $state([]);
+  let knownHostsLoaded = $state(false);
+  let knownHostsUnsub: (() => void) | null = null;
+
+  // Tabs state
+  type TabKey = 'appearance' | 'typography' | 'behavior' | 'security';
+  let activeTab: TabKey = $state('appearance');
 
   // Live theme preview helper
   function previewSelectedTheme() {
@@ -61,6 +71,34 @@
       initializedSelection = false;
     }
   });
+
+  // Load known hosts when dialog opens
+  $effect(() => {
+    if (show) {
+      // Subscribe once per open
+      knownHostsUnsub = Events.On('ssh:known_hosts:list', (ev: any) => {
+        const items = ev.data?.items || [];
+        knownHosts = items;
+        knownHostsLoaded = true;
+      });
+      Events.Emit('ssh:known_hosts:list:request');
+    } else {
+      if (knownHostsUnsub) {
+        knownHostsUnsub();
+        knownHostsUnsub = null;
+      }
+    }
+  });
+
+  async function deleteKnownHost(item: any) {
+    await Events.Emit('ssh:known_hosts:delete', { id: item.id });
+  }
+
+  function hostWithPort(h: string, p: number | string) {
+    const hs = String(h);
+    const ps = String(p);
+    return hs.endsWith(':' + ps) ? hs : `${hs}:${ps}`;
+  }
 
   async function handleSave() {
     saving = true;
@@ -136,9 +174,16 @@
 </script>
 
 <Modal show={show} title="Settings" onClose={handleCancel} panelClass="w-[560px] max-h-[80vh] overflow-y-auto">
+  <!-- Tabs Nav -->
+  <div class="flex gap-2 mb-4" style="border-bottom: 1px solid var(--border-color)">
+    <button class="px-3 py-2 text-sm rounded-t" style="background: {activeTab === 'appearance' ? 'var(--bg-tertiary)' : 'transparent'}; border: 1px solid var(--border-color); border-bottom: none;" onclick={() => activeTab = 'appearance'}>Appearance</button>
+    <button class="px-3 py-2 text-sm rounded-t" style="background: {activeTab === 'typography' ? 'var(--bg-tertiary)' : 'transparent'}; border: 1px solid var(--border-color); border-bottom: none;" onclick={() => activeTab = 'typography'}>Typography</button>
+    <button class="px-3 py-2 text-sm rounded-t" style="background: {activeTab === 'behavior' ? 'var(--bg-tertiary)' : 'transparent'}; border: 1px solid var(--border-color); border-bottom: none;" onclick={() => activeTab = 'behavior'}>Behavior</button>
+    <button class="px-3 py-2 text-sm rounded-t" style="background: {activeTab === 'security' ? 'var(--bg-tertiary)' : 'transparent'}; border: 1px solid var(--border-color); border-bottom: none;" onclick={() => activeTab = 'security'}>Security</button>
+  </div>
   <div class="space-y-6">
         <!-- Theme -->
-        <div>
+        <div style="display: {activeTab === 'appearance' ? 'block' : 'none'}">
           <h3 class="text-lg font-medium mb-3">Appearance</h3>
           <div class="space-y-4">
             <div>
@@ -241,7 +286,7 @@
         </div>
 
         <!-- Typography -->
-        <div>
+        <div style="display: {activeTab === 'typography' ? 'block' : 'none'}">
           <h3 class="text-lg font-medium mb-3">Typography</h3>
           <div class="space-y-4">
             <div>
@@ -293,7 +338,7 @@
         </div>
 
         <!-- Behavior -->
-        <div>
+        <div style="display: {activeTab === 'behavior' ? 'block' : 'none'}">
           <h3 class="text-lg font-medium mb-3">Behavior</h3>
           <div class="space-y-4">
             <div class="flex items-center justify-between">
@@ -339,6 +384,44 @@
               </div>
               <ToggleSwitch checked={showStatusBar} ariaLabel="Show status bar" on:change={(e) => showStatusBar = e.detail} />
             </div>
+          </div>
+        </div>
+
+        <!-- Known Hosts -->
+        <div style="display: {activeTab === 'security' ? 'block' : 'none'}">
+          <h3 class="text-lg font-medium mb-3">Known Hosts</h3>
+          <div class="space-y-2">
+            {#if !knownHostsLoaded}
+              <div class="text-sm" style="color: var(--text-muted)">Loading known hosts…</div>
+            {:else if knownHosts.length === 0}
+              <div class="text-sm" style="color: var(--text-muted)">No known hosts saved yet.</div>
+            {:else}
+              <div class="max-h-60 overflow-auto rounded border" style="border-color: var(--border-color)">
+                <table class="w-full text-sm" style="border-collapse: collapse">
+                  <thead>
+                    <tr style="background: var(--bg-tertiary)">
+                      <th class="text-left p-2 font-medium">Host</th>
+                      <th class="text-left p-2 font-medium">Key Type</th>
+                      <th class="text-left p-2 font-medium">Fingerprint</th>
+                      <th class="text-right p-2 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each knownHosts as item (item.id)}
+                      <tr style="border-top: 1px solid var(--border-color)">
+                        <td class="p-2">{hostWithPort(item.host, item.port)}</td>
+                        <td class="p-2">{item.keyType}</td>
+                        <td class="p-2" style="font-family: monospace">{item.fingerprint}</td>
+                        <td class="p-2 text-right">
+                          <button class="px-2 py-1 text-xs rounded" style="background: var(--bg-tertiary)" onclick={() => deleteKnownHost(item)}>Delete</button>
+                        </td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+              <p class="text-xs" style="color: var(--text-muted)">Use this list to remove stale or reused IP entries (e.g., recycled VM IPs).</p>
+            {/if}
           </div>
         </div>
   </div>

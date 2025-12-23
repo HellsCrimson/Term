@@ -63,4 +63,26 @@ CREATE TRIGGER IF NOT EXISTS update_settings_timestamp
 BEGIN
     UPDATE settings SET updated_at = CURRENT_TIMESTAMP WHERE key = NEW.key;
 END;
+
+-- Known hosts table for SSH host key verification
+CREATE TABLE IF NOT EXISTS known_hosts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    host TEXT NOT NULL,
+    port INTEGER NOT NULL DEFAULT 22,
+    key_type TEXT NOT NULL,
+    fingerprint TEXT NOT NULL,
+    public_key BLOB,
+    first_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(host, port)
+);
+
+CREATE INDEX IF NOT EXISTS idx_known_hosts_host_port ON known_hosts(host, port);
+
+CREATE TRIGGER IF NOT EXISTS update_known_hosts_timestamp
+    AFTER UPDATE ON known_hosts
+    FOR EACH ROW
+BEGIN
+    UPDATE known_hosts SET last_seen = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
 `

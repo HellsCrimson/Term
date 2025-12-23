@@ -1,10 +1,10 @@
 package database
 
 import (
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"time"
+    "database/sql"
+    "encoding/json"
+    "fmt"
+    "time"
 )
 
 // SessionNode represents a node in the session tree (folder or session)
@@ -32,11 +32,23 @@ type Config struct {
 
 // Setting represents an application setting
 type Setting struct {
-	Key       string    `json:"key"`
-	Value     string    `json:"value"`
-	ValueType string    `json:"valueType"` // "string", "int", "bool", "json"
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+    Key       string    `json:"key"`
+    Value     string    `json:"value"`
+    ValueType string    `json:"valueType"` // "string", "int", "bool", "json"
+    CreatedAt time.Time `json:"createdAt"`
+    UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// KnownHost represents a stored SSH known host entry
+type KnownHost struct {
+    ID          int       `json:"id"`
+    Host        string    `json:"host"`
+    Port        int       `json:"port"`
+    KeyType     string    `json:"keyType"`
+    Fingerprint string    `json:"fingerprint"`
+    PublicKey   []byte    `json:"publicKey"`
+    FirstSeen   time.Time `json:"firstSeen"`
+    LastSeen    time.Time `json:"lastSeen"`
 }
 
 // GetAllSessions retrieves all session nodes
@@ -272,11 +284,11 @@ func (db *DB) SetSetting(key, value, valueType string) error {
 
 // SetSettingJSON sets a setting with a JSON value
 func (db *DB) SetSettingJSON(key string, value interface{}) error {
-	jsonBytes, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-	return db.SetSetting(key, string(jsonBytes), "json")
+    jsonBytes, err := json.Marshal(value)
+    if err != nil {
+        return err
+    }
+    return db.SetSetting(key, string(jsonBytes), "json")
 }
 
 // GetSettingJSON retrieves a setting and unmarshals it as JSON
@@ -400,4 +412,65 @@ func (db *DB) reorderSiblingsInTx(tx *sql.Tx, parentID *string) error {
 	}
 
 	return nil
+}
+
+// GetKnownHost looks up a known host by host and port
+func (db *DB) GetKnownHost(host string, port int) (*KnownHost, error) {
+    var kh KnownHost
+    err := db.conn.QueryRow(`
+        SELECT id, host, port, key_type, fingerprint, public_key, first_seen, last_seen
+        FROM known_hosts WHERE host = ? AND port = ?
+    `, host, port).Scan(&kh.ID, &kh.Host, &kh.Port, &kh.KeyType, &kh.Fingerprint, &kh.PublicKey, &kh.FirstSeen, &kh.LastSeen)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return nil, nil
+        }
+        return nil, err
+    }
+    return &kh, nil
+}
+
+// UpsertKnownHost inserts or updates a known host entry
+func (db *DB) UpsertKnownHost(host string, port int, keyType, fingerprint string, publicKey []byte) error {
+    _, err := db.conn.Exec(`
+        INSERT INTO known_hosts (host, port, key_type, fingerprint, public_key)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(host, port) DO UPDATE SET key_type = excluded.key_type, fingerprint = excluded.fingerprint, public_key = excluded.public_key, last_seen = CURRENT_TIMESTAMP
+    `, host, port, keyType, fingerprint, publicKey)
+    return err
+}
+
+// ListKnownHosts returns all known hosts
+func (db *DB) ListKnownHosts() ([]KnownHost, error) {
+    rows, err := db.conn.Query(`
+        SELECT id, host, port, key_type, fingerprint, public_key, first_seen, last_seen
+        FROM known_hosts
+        ORDER BY host, port
+    `)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var result []KnownHost
+    for rows.Next() {
+        var kh KnownHost
+        if err := rows.Scan(&kh.ID, &kh.Host, &kh.Port, &kh.KeyType, &kh.Fingerprint, &kh.PublicKey, &kh.FirstSeen, &kh.LastSeen); err != nil {
+            return nil, err
+        }
+        result = append(result, kh)
+    }
+    return result, rows.Err()
+}
+
+// DeleteKnownHost removes a known host by id
+func (db *DB) DeleteKnownHost(id int) error {
+    _, err := db.conn.Exec(`DELETE FROM known_hosts WHERE id = ?`, id)
+    return err
+}
+
+// DeleteKnownHostByHostPort removes a known host by host and port
+func (db *DB) DeleteKnownHostByHostPort(host string, port int) error {
+    _, err := db.conn.Exec(`DELETE FROM known_hosts WHERE host = ? AND port = ?`, host, port)
+    return err
 }
