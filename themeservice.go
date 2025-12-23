@@ -1,11 +1,13 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"os"
-	"path/filepath"
+    "context"
+    "encoding/json"
+    "fmt"
+    "embed"
+    "os"
+    "path/filepath"
+    "io/fs"
 )
 
 type ThemeColors struct {
@@ -97,7 +99,9 @@ func NewThemeService(ctx context.Context, settingsSvc *SettingsService) *ThemeSe
 
 // GetAllThemes returns all available themes (built-in + user)
 func (s *ThemeService) GetAllThemes() ([]Theme, error) {
-	themes := []Theme{}
+    // Ensure defaults are present if this is first run
+    _ = s.bootstrapDefaultThemes()
+    themes := []Theme{}
 
 	// Load built-in themes
 	builtInThemes, err := s.loadThemesFromDirectory(s.builtInPath)
@@ -139,7 +143,21 @@ func (s *ThemeService) GetActiveTheme() (*Theme, error) {
 		themeID = setting.Value
 	}
 
-	return s.GetTheme(themeID)
+	// Ensure built-in defaults exist if nothing is available yet
+	if err := s.bootstrapDefaultThemes(); err != nil {
+		// Ignore bootstrap error, still try to return a theme
+	}
+
+	th, getErr := s.GetTheme(themeID)
+	if getErr == nil {
+		return th, nil
+	}
+	// If requested theme is missing, fall back to dark and persist
+	if _, derr := s.GetTheme("dark"); derr == nil {
+		_ = s.settingsSvc.SetSetting("active_theme", "dark", "string")
+		return s.GetTheme("dark")
+	}
+	return nil, getErr
 }
 
 // SetActiveTheme sets the active theme
@@ -231,4 +249,43 @@ func (s *ThemeService) loadThemesFromDirectory(dir string) ([]Theme, error) {
 	}
 
 	return themes, nil
+}
+
+// Embedded default themes for bootstrapping on first run
+//go:embed themes/*.json
+var embeddedThemesFS embed.FS
+
+// bootstrapDefaultThemes copies embedded default themes to the user theme folder
+// if no themes are currently available. It also ensures there is a valid
+// "active_theme" setting.
+func (s *ThemeService) bootstrapDefaultThemes() error {
+    // Check if any themes are already present (built-in or user)
+    if list, _ := s.GetAllThemes(); len(list) > 0 {
+        // Ensure active theme references an existing theme
+        if st, err := s.settingsSvc.GetSetting("active_theme"); err != nil || st.Value == "" {
+            _ = s.settingsSvc.SetSetting("active_theme", "dark", "string")
+        } else {
+            if _, err := s.GetTheme(st.Value); err != nil {
+                _ = s.settingsSvc.SetSetting("active_theme", "dark", "string")
+            }
+        }
+        return nil
+    }
+
+    // No themes available: install embedded defaults into user theme directory
+    entries, err := fs.ReadDir(embeddedThemesFS, "themes")
+    if err != nil {
+        return nil // nothing to install
+    }
+    for _, e := range entries {
+        if e.IsDir() { continue }
+        data, err := embeddedThemesFS.ReadFile("themes/" + e.Name())
+        if err != nil { continue }
+        dest := filepath.Join(s.userThemePath, e.Name())
+        _ = os.WriteFile(dest, data, 0644)
+    }
+
+    // Set default active theme
+    _ = s.settingsSvc.SetSetting("active_theme", "dark", "string")
+    return nil
 }
