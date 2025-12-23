@@ -67,6 +67,10 @@ func main() {
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID:      "dd231868-8745-42a5-a173-4b2f7565b82c",
+			EncryptionKey: [32]byte{}, // TODO: set encryption key at build time
+		},
 	})
 
 	// Host key service for SSH verification
