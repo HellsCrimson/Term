@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     parent_id TEXT,
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK(type IN ('folder', 'session')),
-    session_type TEXT CHECK(session_type IN ('ssh', 'bash', 'zsh', 'fish', 'pwsh', 'git-bash', 'custom', 'rdp', 'vnc', 'telnet')),
+    session_type TEXT CHECK(session_type IN ('ssh', 'bash', 'zsh', 'fish', 'pwsh', 'git-bash', 'custom', 'rdp', 'vnc', 'telnet', 'powershell', 'cmd', 'serial')),
     position INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

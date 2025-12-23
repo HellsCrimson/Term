@@ -5,292 +5,111 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
-/**
- * Credential holds user and group identities to be assumed
- * by a child process started by [StartProcess].
- */
-export class Credential {
+export enum Handle {
     /**
-     * User ID.
+     * The Go zero value for the underlying type of the enum.
      */
-    "Uid": number;
+    $zero = 0,
 
-    /**
-     * Group ID.
-     */
-    "Gid": number;
+    InvalidHandle = 18446744073709551615,
+};
 
-    /**
-     * Supplementary group IDs.
-     */
-    "Groups": number[];
+export class SecurityAttributes {
+    "Length": number;
+    "SecurityDescriptor": number;
+    "InheritHandle": number;
 
-    /**
-     * If true, don't set supplementary groups
-     */
-    "NoSetGroups": boolean;
-
-    /** Creates a new Credential instance. */
-    constructor($$source: Partial<Credential> = {}) {
-        if (!("Uid" in $$source)) {
-            this["Uid"] = 0;
+    /** Creates a new SecurityAttributes instance. */
+    constructor($$source: Partial<SecurityAttributes> = {}) {
+        if (!("Length" in $$source)) {
+            this["Length"] = 0;
         }
-        if (!("Gid" in $$source)) {
-            this["Gid"] = 0;
+        if (!("SecurityDescriptor" in $$source)) {
+            this["SecurityDescriptor"] = 0;
         }
-        if (!("Groups" in $$source)) {
-            this["Groups"] = [];
-        }
-        if (!("NoSetGroups" in $$source)) {
-            this["NoSetGroups"] = false;
+        if (!("InheritHandle" in $$source)) {
+            this["InheritHandle"] = 0;
         }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new Credential instance from a string or object.
+     * Creates a new SecurityAttributes instance from a string or object.
      */
-    static createFrom($$source: any = {}): Credential {
-        const $$createField2_0 = $$createType0;
+    static createFrom($$source: any = {}): SecurityAttributes {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("Groups" in $$parsedSource) {
-            $$parsedSource["Groups"] = $$createField2_0($$parsedSource["Groups"]);
-        }
-        return new Credential($$parsedSource as Partial<Credential>);
+        return new SecurityAttributes($$parsedSource as Partial<SecurityAttributes>);
     }
 }
 
-/**
- * A Signal is a number describing a process signal.
- * It implements the [os.Signal] interface.
- */
-export enum Signal {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = 0,
-
-    /**
-     * Signals
-     */
-    SIGABRT = 6,
-    SIGALRM = 14,
-    SIGBUS = 7,
-    SIGCHLD = 17,
-    SIGCLD = 17,
-    SIGCONT = 18,
-    SIGFPE = 8,
-    SIGHUP = 1,
-    SIGILL = 4,
-    SIGINT = 2,
-    SIGIO = 29,
-    SIGIOT = 6,
-    SIGKILL = 9,
-    SIGPIPE = 13,
-    SIGPOLL = 29,
-    SIGPROF = 27,
-    SIGPWR = 30,
-    SIGQUIT = 3,
-    SIGSEGV = 11,
-    SIGSTKFLT = 16,
-    SIGSTOP = 19,
-    SIGSYS = 31,
-    SIGTERM = 15,
-    SIGTRAP = 5,
-    SIGTSTP = 20,
-    SIGTTIN = 21,
-    SIGTTOU = 22,
-    SIGUNUSED = 31,
-    SIGURG = 23,
-    SIGUSR1 = 10,
-    SIGUSR2 = 12,
-    SIGVTALRM = 26,
-    SIGWINCH = 28,
-    SIGXCPU = 24,
-    SIGXFSZ = 25,
-};
-
 export class SysProcAttr {
-    /**
-     * Chroot.
-     */
-    "Chroot": string;
+    "HideWindow": boolean;
 
     /**
-     * Credential.
+     * used if non-empty, else the windows command line is built by escaping the arguments passed to StartProcess
      */
-    "Credential": Credential | null;
+    "CmdLine": string;
+    "CreationFlags": number;
 
     /**
-     * Ptrace tells the child to call ptrace(PTRACE_TRACEME).
-     * Call runtime.LockOSThread before starting a process with this set,
-     * and don't call UnlockOSThread until done with PtraceSyscall calls.
+     * if set, runs new process in the security context represented by the token
      */
-    "Ptrace": boolean;
+    "Token": Token;
 
     /**
-     * Create session.
+     * if set, applies these security attributes as the descriptor for the new process
      */
-    "Setsid": boolean;
+    "ProcessAttributes": SecurityAttributes | null;
 
     /**
-     * Setpgid sets the process group ID of the child to Pgid,
-     * or, if Pgid == 0, to the new child's process ID.
+     * if set, applies these security attributes as the descriptor for the main thread of the new process
      */
-    "Setpgid": boolean;
+    "ThreadAttributes": SecurityAttributes | null;
 
     /**
-     * Setctty sets the controlling terminal of the child to
-     * file descriptor Ctty. Ctty must be a descriptor number
-     * in the child process: an index into ProcAttr.Files.
-     * This is only meaningful if Setsid is true.
+     * if set, no handles are inherited by the new process, not even the standard handles, contained in ProcAttr.Files, nor the ones contained in AdditionalInheritedHandles
      */
-    "Setctty": boolean;
+    "NoInheritHandles": boolean;
 
     /**
-     * Detach fd 0 from controlling terminal.
+     * a list of additional handles, already marked as inheritable, that will be inherited by the new process
      */
-    "Noctty": boolean;
+    "AdditionalInheritedHandles": Handle[];
 
     /**
-     * Controlling TTY fd.
+     * if non-zero, the new process regards the process given by this handle as its parent process, and AdditionalInheritedHandles, if set, should exist in this parent process
      */
-    "Ctty": number;
-
-    /**
-     * Foreground places the child process group in the foreground.
-     * This implies Setpgid. The Ctty field must be set to
-     * the descriptor of the controlling TTY.
-     * Unlike Setctty, in this case Ctty must be a descriptor
-     * number in the parent process.
-     */
-    "Foreground": boolean;
-
-    /**
-     * Child's process group ID if Setpgid.
-     */
-    "Pgid": number;
-
-    /**
-     * Pdeathsig, if non-zero, is a signal that the kernel will send to
-     * the child process when the creating thread dies. Note that the signal
-     * is sent on thread termination, which may happen before process termination.
-     * There are more details at https://go.dev/issue/27505.
-     */
-    "Pdeathsig": Signal;
-
-    /**
-     * Flags for clone calls.
-     */
-    "Cloneflags": number;
-
-    /**
-     * Flags for unshare calls.
-     */
-    "Unshareflags": number;
-
-    /**
-     * User ID mappings for user namespaces.
-     */
-    "UidMappings": SysProcIDMap[];
-
-    /**
-     * Group ID mappings for user namespaces.
-     */
-    "GidMappings": SysProcIDMap[];
-
-    /**
-     * GidMappingsEnableSetgroups enabling setgroups syscall.
-     * If false, then setgroups syscall will be disabled for the child process.
-     * This parameter is no-op if GidMappings == nil. Otherwise for unprivileged
-     * users this should be set to false for mappings work.
-     */
-    "GidMappingsEnableSetgroups": boolean;
-
-    /**
-     * Ambient capabilities.
-     */
-    "AmbientCaps": number[];
-
-    /**
-     * Whether to make use of the CgroupFD field.
-     */
-    "UseCgroupFD": boolean;
-
-    /**
-     * File descriptor of a cgroup to put the new process into.
-     */
-    "CgroupFD": number;
-
-    /**
-     * PidFD, if not nil, is used to store the pidfd of a child, if the
-     * functionality is supported by the kernel, or -1. Note *PidFD is
-     * changed only if the process starts successfully.
-     */
-    "PidFD": number | null;
+    "ParentProcess": Handle;
 
     /** Creates a new SysProcAttr instance. */
     constructor($$source: Partial<SysProcAttr> = {}) {
-        if (!("Chroot" in $$source)) {
-            this["Chroot"] = "";
+        if (!("HideWindow" in $$source)) {
+            this["HideWindow"] = false;
         }
-        if (!("Credential" in $$source)) {
-            this["Credential"] = null;
+        if (!("CmdLine" in $$source)) {
+            this["CmdLine"] = "";
         }
-        if (!("Ptrace" in $$source)) {
-            this["Ptrace"] = false;
+        if (!("CreationFlags" in $$source)) {
+            this["CreationFlags"] = 0;
         }
-        if (!("Setsid" in $$source)) {
-            this["Setsid"] = false;
+        if (!("Token" in $$source)) {
+            this["Token"] = 0;
         }
-        if (!("Setpgid" in $$source)) {
-            this["Setpgid"] = false;
+        if (!("ProcessAttributes" in $$source)) {
+            this["ProcessAttributes"] = null;
         }
-        if (!("Setctty" in $$source)) {
-            this["Setctty"] = false;
+        if (!("ThreadAttributes" in $$source)) {
+            this["ThreadAttributes"] = null;
         }
-        if (!("Noctty" in $$source)) {
-            this["Noctty"] = false;
+        if (!("NoInheritHandles" in $$source)) {
+            this["NoInheritHandles"] = false;
         }
-        if (!("Ctty" in $$source)) {
-            this["Ctty"] = 0;
+        if (!("AdditionalInheritedHandles" in $$source)) {
+            this["AdditionalInheritedHandles"] = [];
         }
-        if (!("Foreground" in $$source)) {
-            this["Foreground"] = false;
-        }
-        if (!("Pgid" in $$source)) {
-            this["Pgid"] = 0;
-        }
-        if (!("Pdeathsig" in $$source)) {
-            this["Pdeathsig"] = Signal.$zero;
-        }
-        if (!("Cloneflags" in $$source)) {
-            this["Cloneflags"] = 0;
-        }
-        if (!("Unshareflags" in $$source)) {
-            this["Unshareflags"] = 0;
-        }
-        if (!("UidMappings" in $$source)) {
-            this["UidMappings"] = [];
-        }
-        if (!("GidMappings" in $$source)) {
-            this["GidMappings"] = [];
-        }
-        if (!("GidMappingsEnableSetgroups" in $$source)) {
-            this["GidMappingsEnableSetgroups"] = false;
-        }
-        if (!("AmbientCaps" in $$source)) {
-            this["AmbientCaps"] = [];
-        }
-        if (!("UseCgroupFD" in $$source)) {
-            this["UseCgroupFD"] = false;
-        }
-        if (!("CgroupFD" in $$source)) {
-            this["CgroupFD"] = 0;
-        }
-        if (!("PidFD" in $$source)) {
-            this["PidFD"] = null;
+        if (!("ParentProcess" in $$source)) {
+            this["ParentProcess"] = Handle.$zero;
         }
 
         Object.assign(this, $$source);
@@ -300,79 +119,35 @@ export class SysProcAttr {
      * Creates a new SysProcAttr instance from a string or object.
      */
     static createFrom($$source: any = {}): SysProcAttr {
-        const $$createField1_0 = $$createType2;
-        const $$createField13_0 = $$createType4;
-        const $$createField14_0 = $$createType4;
-        const $$createField16_0 = $$createType5;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType1;
+        const $$createField7_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("Credential" in $$parsedSource) {
-            $$parsedSource["Credential"] = $$createField1_0($$parsedSource["Credential"]);
+        if ("ProcessAttributes" in $$parsedSource) {
+            $$parsedSource["ProcessAttributes"] = $$createField4_0($$parsedSource["ProcessAttributes"]);
         }
-        if ("UidMappings" in $$parsedSource) {
-            $$parsedSource["UidMappings"] = $$createField13_0($$parsedSource["UidMappings"]);
+        if ("ThreadAttributes" in $$parsedSource) {
+            $$parsedSource["ThreadAttributes"] = $$createField5_0($$parsedSource["ThreadAttributes"]);
         }
-        if ("GidMappings" in $$parsedSource) {
-            $$parsedSource["GidMappings"] = $$createField14_0($$parsedSource["GidMappings"]);
-        }
-        if ("AmbientCaps" in $$parsedSource) {
-            $$parsedSource["AmbientCaps"] = $$createField16_0($$parsedSource["AmbientCaps"]);
+        if ("AdditionalInheritedHandles" in $$parsedSource) {
+            $$parsedSource["AdditionalInheritedHandles"] = $$createField7_0($$parsedSource["AdditionalInheritedHandles"]);
         }
         return new SysProcAttr($$parsedSource as Partial<SysProcAttr>);
     }
 }
 
 /**
- * SysProcIDMap holds Container ID to Host ID mappings used for User Namespaces in Linux.
- * See user_namespaces(7).
- * 
- * Note that User Namespaces are not available on a number of popular Linux
- * versions (due to security issues), or are available but subject to AppArmor
- * restrictions like in Ubuntu 24.04.
+ * An access token contains the security information for a logon session.
+ * The system creates an access token when a user logs on, and every
+ * process executed on behalf of the user has a copy of the token.
+ * The token identifies the user, the user's groups, and the user's
+ * privileges. The system uses the token to control access to securable
+ * objects and to control the ability of the user to perform various
+ * system-related operations on the local computer.
  */
-export class SysProcIDMap {
-    /**
-     * Container ID.
-     */
-    "ContainerID": number;
-
-    /**
-     * Host ID.
-     */
-    "HostID": number;
-
-    /**
-     * Size.
-     */
-    "Size": number;
-
-    /** Creates a new SysProcIDMap instance. */
-    constructor($$source: Partial<SysProcIDMap> = {}) {
-        if (!("ContainerID" in $$source)) {
-            this["ContainerID"] = 0;
-        }
-        if (!("HostID" in $$source)) {
-            this["HostID"] = 0;
-        }
-        if (!("Size" in $$source)) {
-            this["Size"] = 0;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new SysProcIDMap instance from a string or object.
-     */
-    static createFrom($$source: any = {}): SysProcIDMap {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new SysProcIDMap($$parsedSource as Partial<SysProcIDMap>);
-    }
-}
+export type Token = number;
 
 // Private type creation functions
-const $$createType0 = $Create.Array($Create.Any);
-const $$createType1 = Credential.createFrom;
-const $$createType2 = $Create.Nullable($$createType1);
-const $$createType3 = SysProcIDMap.createFrom;
-const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = $Create.Array($Create.Any);
+const $$createType0 = SecurityAttributes.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = $Create.Array($Create.Any);

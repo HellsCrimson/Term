@@ -2,6 +2,8 @@ import type { SessionNode, TreeNode } from '../types';
 import * as SessionService from '$bindings/term/sessionservice';
 import { LoggingService } from '$bindings/term';
 
+type sessionType = 'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'git-bash' | 'rdp' | 'vnc' | 'telnet' | 'custom' | 'powershell' | 'cmd' | 'serial' | undefined;
+
 class SessionsStore {
   sessions = $state<SessionNode[]>([]);
   tree = $state<TreeNode[]>([]);
@@ -17,7 +19,7 @@ class SessionsStore {
       this.sessions = (sessions || []).map(s => ({
         ...s,
         type: s.type as 'folder' | 'session',
-        sessionType: s.sessionType as 'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'git-bash' | 'rdp' | 'vnc' | 'telnet' | 'custom' | undefined
+        sessionType: s.sessionType as sessionType
       }));
 
       const treeData = await SessionService.GetSessionTree();
@@ -42,7 +44,7 @@ class SessionsStore {
       session: {
         ...node.session,
         type: node.session.type as 'folder' | 'session',
-        sessionType: node.session.sessionType as 'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'git-bash' | 'rdp' | 'vnc' | 'telnet' | 'custom' | undefined
+        sessionType: node.session.sessionType as sessionType
       },
       children: (node.children || []).map((child: any) => this.castTreeNode(child))
     };

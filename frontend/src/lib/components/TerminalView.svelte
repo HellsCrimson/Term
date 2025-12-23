@@ -125,6 +125,8 @@
 
     // Open terminal in DOM
     terminal.open(terminalElement);
+    // Ensure a fully clean buffer on fresh open
+    try { terminal.reset(); terminal.clear(); } catch { /* ignore */ }
 
     // Fit terminal to container
     fitAddon.fit();

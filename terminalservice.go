@@ -22,17 +22,29 @@ type TerminalService struct {
 }
 
 type TerminalSession struct {
-	ID         string
-	PTY        *os.File
-	Cmd        *exec.Cmd
-	Running    bool
-	mu         sync.Mutex
+	ID      string
+	PTY     *os.File
+	Cmd     *exec.Cmd
+	Running bool
+	mu      sync.Mutex
 
 	// SSH-specific fields
 	SSHClient  *ssh.Client
 	SSHSession *ssh.Session
 	SSHStdin   io.WriteCloser
 	IsSSH      bool
+
+	// Windows/Pipe fallback fields (non-PTY local sessions on Windows)
+	Stdin  io.WriteCloser
+	Stdout io.Reader
+	Stderr io.Reader
+
+	// Optional PTY resizer for platform-specific implementations
+	ResizePTY func(cols, rows uint16) error
+	// Process control for platforms that don't use exec.Cmd
+	Wait     func() (int, error)
+	Kill     func() error
+	ClosePTY func()
 }
 
 // StartSessionRequest represents the parameters for starting a new terminal session
@@ -75,9 +87,22 @@ func (t *TerminalService) StartSession(req StartSessionRequest) error {
 
 	// Create command
 	cmd := exec.Command(shellCmd, args...)
+	// Ensure no extra terminal window appears (Windows only; no-op elsewhere)
+	setCmdNoWindow(cmd)
 
 	// Set environment variables
 	cmd.Env = os.Environ()
+	// Ensure a sane TERM for PTY environments
+	hasTERM := false
+	for _, kv := range cmd.Env {
+		if strings.HasPrefix(kv, "TERM=") {
+			hasTERM = true
+			break
+		}
+	}
+	if !hasTERM {
+		cmd.Env = append(cmd.Env, "TERM=xterm-256color")
+	}
 
 	// Set working directory
 	if workingDir, ok := req.Config["working_directory"]; ok && workingDir != "" {
@@ -98,39 +123,67 @@ func (t *TerminalService) StartSession(req StartSessionRequest) error {
 		cmd.Env = append(cmd.Env, vars...)
 	}
 
-	// Start PTY
-	ptty, err := pty.Start(cmd)
-	if err != nil {
-		return fmt.Errorf("failed to start PTY: %w", err)
-	}
+	var session *TerminalSession
 
-	// Set initial size
-	if req.Cols > 0 && req.Rows > 0 {
-		if err := pty.Setsize(ptty, &pty.Winsize{
-			Rows: req.Rows,
-			Cols: req.Cols,
-		}); err != nil {
-			ptty.Close()
-			return fmt.Errorf("failed to set PTY size: %w", err)
+	// Try to start a PTY for all platforms. Windows implementation uses ConPTY.
+	if rw, resizeFn, waitFn, killFn, closeFn, err := startPTY(cmd, req.Cols, req.Rows); err == nil && rw != nil {
+		// If the underlying rw is an *os.File, keep it in PTY to reuse unix path
+		var ptyFile *os.File
+		if f, ok := rw.(*os.File); ok {
+			ptyFile = f
 		}
+
+		session = &TerminalSession{
+			ID:        req.ID,
+			PTY:       ptyFile,
+			Cmd:       cmd,
+			Running:   true,
+			IsSSH:     false,
+			Stdin:     rw,
+			Stdout:    rw,
+			Stderr:    nil, // PTY multiplexes stdout/stderr
+			ResizePTY: resizeFn,
+			Wait:      waitFn,
+			Kill:      killFn,
+			ClosePTY:  closeFn,
+		}
+		t.sessions[req.ID] = session
+
+		// Stream from PTY (single stream)
+		go t.streamPipeOutput(session)
+		// Monitor exit
+		go t.monitorExit(session)
+	} else {
+		// PTY not available (e.g., older Windows). Fallback to plain pipes.
+		stdin, err := cmd.StdinPipe()
+		if err != nil {
+			return fmt.Errorf("failed to get stdin pipe: %w", err)
+		}
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return fmt.Errorf("failed to get stdout pipe: %w", err)
+		}
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			return fmt.Errorf("failed to get stderr pipe: %w", err)
+		}
+		if err := cmd.Start(); err != nil {
+			return fmt.Errorf("failed to start process: %w", err)
+		}
+		session = &TerminalSession{
+			ID:      req.ID,
+			PTY:     nil,
+			Cmd:     cmd,
+			Running: true,
+			IsSSH:   false,
+			Stdin:   stdin,
+			Stdout:  stdout,
+			Stderr:  stderr,
+		}
+		t.sessions[req.ID] = session
+		go t.streamPipeOutput(session)
+		go t.monitorExit(session)
 	}
-
-	// Create session
-	session := &TerminalSession{
-		ID:      req.ID,
-		PTY:     ptty,
-		Cmd:     cmd,
-		Running: true,
-		IsSSH:   false,
-	}
-
-	t.sessions[req.ID] = session
-
-	// Start output streaming in background
-	go t.streamOutput(session)
-
-	// Start monitoring process exit
-	go t.monitorExit(session)
 
 	// Run startup commands if provided
 	if startupCmds, ok := req.Config["startup_commands"]; ok && startupCmds != "" {
@@ -148,6 +201,15 @@ func (t *TerminalService) StartSession(req StartSessionRequest) error {
 		}()
 	}
 
+	// On Windows, explicitly reset & clear screen on start to avoid leftover content
+	if runtime.GOOS == "windows" {
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			// Reset, clear scrollback and screen, move cursor home
+			_ = t.WriteToSession(req.ID, "\x1bc\x1b[3J\x1b[2J\x1b[H")
+		}()
+	}
+
 	return nil
 }
 
@@ -162,6 +224,13 @@ func (t *TerminalService) getShellCommand(sessionType string, config map[string]
 		return t.findShell([]string{"fish", "/usr/bin/fish"}, []string{"-l"})
 	case "pwsh":
 		return t.findShell([]string{"pwsh", "powershell"}, []string{"-NoLogo"})
+	case "powershell":
+		return t.findShell([]string{"powershell", "pwsh"}, []string{"-NoLogo"})
+	case "cmd":
+		if runtime.GOOS == "windows" {
+			return t.findShell([]string{"cmd", "cmd.exe"}, []string{})
+		}
+		return "", nil, fmt.Errorf("cmd is only available on Windows")
 	case "git-bash":
 		if runtime.GOOS == "windows" {
 			paths := []string{
@@ -433,6 +502,67 @@ func (t *TerminalService) streamOutput(session *TerminalSession) {
 	}
 }
 
+// streamPipeOutput streams stdout & stderr for non-PTY local sessions (Windows fallback)
+func (t *TerminalService) streamPipeOutput(session *TerminalSession) {
+	// Stream stdout
+	if session.Stdout != nil {
+		go func() {
+			buf := make([]byte, 8192)
+			for {
+				n, err := session.Stdout.Read(buf)
+				if err != nil {
+					if err != io.EOF {
+						t.app.Event.Emit("terminal:error", map[string]interface{}{
+							"id":    session.ID,
+							"error": err.Error(),
+						})
+					}
+					break
+				}
+				if n > 0 {
+					data := string(buf[:n])
+					if runtime.GOOS == "windows" && !session.IsSSH {
+						data = normalizeWindowsOutput(data)
+					}
+					t.app.Event.Emit("terminal:data", map[string]interface{}{
+						"id":   session.ID,
+						"data": data,
+					})
+				}
+			}
+		}()
+	}
+
+	// Stream stderr
+	if session.Stderr != nil {
+		go func() {
+			buf := make([]byte, 8192)
+			for {
+				n, err := session.Stderr.Read(buf)
+				if err != nil {
+					if err != io.EOF {
+						t.app.Event.Emit("terminal:error", map[string]interface{}{
+							"id":    session.ID,
+							"error": err.Error(),
+						})
+					}
+					break
+				}
+				if n > 0 {
+					data := string(buf[:n])
+					if runtime.GOOS == "windows" && !session.IsSSH {
+						data = normalizeWindowsOutput(data)
+					}
+					t.app.Event.Emit("terminal:data", map[string]interface{}{
+						"id":   session.ID,
+						"data": data,
+					})
+				}
+			}
+		}()
+	}
+}
+
 // streamSSHOutput streams SSH session output to the frontend
 func (t *TerminalService) streamSSHOutput(session *TerminalSession, stdout, stderr io.Reader) {
 	// Stream stdout
@@ -486,18 +616,27 @@ func (t *TerminalService) streamSSHOutput(session *TerminalSession, stdout, stde
 
 // monitorExit monitors when the process exits
 func (t *TerminalService) monitorExit(session *TerminalSession) {
-	err := session.Cmd.Wait()
+	var err error
+	exitCode := 0
+	if session.Wait != nil {
+		// Platform-specific wait function (e.g., Windows ConPTY)
+		code, werr := session.Wait()
+		if werr != nil {
+			err = werr
+		}
+		exitCode = code
+	} else if session.Cmd != nil {
+		err = session.Cmd.Wait()
+		if err != nil {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				exitCode = exitErr.ExitCode()
+			}
+		}
+	}
 
 	session.mu.Lock()
 	session.Running = false
 	session.mu.Unlock()
-
-	exitCode := 0
-	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			exitCode = exitErr.ExitCode()
-		}
-	}
 
 	// Emit exit event
 	t.app.Event.Emit("terminal:exit", map[string]interface{}{
@@ -559,8 +698,61 @@ func (t *TerminalService) WriteToSession(id string, data string) error {
 		return err
 	}
 
-	_, err := session.PTY.Write([]byte(data))
-	return err
+	// Local sessions
+	if runtime.GOOS == "windows" {
+		data = normalizeWindowsInput(data)
+	}
+	if session.PTY != nil {
+		_, err := session.PTY.Write([]byte(data))
+		return err
+	}
+	if session.Stdin != nil {
+		_, err := session.Stdin.Write([]byte(data))
+		return err
+	}
+	return fmt.Errorf("no writer available for session %s", id)
+}
+
+// normalizeWindowsInput ensures CRLF newlines for Windows console apps.
+func normalizeWindowsInput(in string) string {
+	var b strings.Builder
+	b.Grow(len(in) * 2)
+	for i := 0; i < len(in); i++ {
+		c := in[i]
+		if c == '\r' {
+			if i+1 < len(in) && in[i+1] == '\n' {
+				b.WriteString("\r\n")
+				i++
+			} else {
+				b.WriteString("\r\n")
+			}
+		} else if c == '\n' {
+			b.WriteString("\r\n")
+		} else {
+			b.WriteByte(c)
+		}
+	}
+	return b.String()
+}
+
+// normalizeWindowsOutput converts solitary CR to CRLF to avoid prompt overwriting.
+func normalizeWindowsOutput(in string) string {
+	var b strings.Builder
+	b.Grow(len(in) * 2)
+	for i := 0; i < len(in); i++ {
+		c := in[i]
+		if c == '\r' {
+			if i+1 < len(in) && in[i+1] == '\n' {
+				b.WriteString("\r\n")
+				i++
+			} else {
+				b.WriteString("\r\n")
+			}
+		} else {
+			b.WriteByte(c)
+		}
+	}
+	return b.String()
 }
 
 // ResizeSession resizes a terminal session
@@ -584,11 +776,19 @@ func (t *TerminalService) ResizeSession(id string, cols uint16, rows uint16) err
 		// Send window change request for SSH session
 		return session.SSHSession.WindowChange(int(rows), int(cols))
 	}
-
-	return pty.Setsize(session.PTY, &pty.Winsize{
-		Rows: rows,
-		Cols: cols,
-	})
+	// Prefer platform-specific resizer if available (e.g., ConPTY)
+	if session.ResizePTY != nil {
+		return session.ResizePTY(cols, rows)
+	}
+	// If we have a real PTY (Unix), resize it
+	if session.PTY != nil {
+		return pty.Setsize(session.PTY, &pty.Winsize{
+			Rows: rows,
+			Cols: cols,
+		})
+	}
+	// No-op on plain pipes fallback
+	return nil
 }
 
 // CloseSession closes a terminal session
@@ -616,16 +816,24 @@ func (t *TerminalService) CloseSession(id string) error {
 			session.SSHClient.Close()
 		}
 	} else {
-		// Close PTY (this will also terminate the process)
+		// Close resources for local sessions
+		if session.ClosePTY != nil {
+			session.ClosePTY()
+		}
 		if session.PTY != nil {
-			if err := session.PTY.Close(); err != nil {
-				return err
-			}
+			_ = session.PTY.Close()
+		}
+		if session.Stdin != nil {
+			_ = session.Stdin.Close()
 		}
 
 		// Kill process if still running
-		if session.Running && session.Cmd != nil && session.Cmd.Process != nil {
-			session.Cmd.Process.Kill()
+		if session.Running {
+			if session.Kill != nil {
+				_ = session.Kill()
+			} else if session.Cmd != nil && session.Cmd.Process != nil {
+				session.Cmd.Process.Kill()
+			}
 		}
 	}
 

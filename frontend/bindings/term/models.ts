@@ -318,6 +318,25 @@ export class TerminalSession {
     "SSHStdin": io$0.WriteCloser;
     "IsSSH": boolean;
 
+    /**
+     * Windows/Pipe fallback fields (non-PTY local sessions on Windows)
+     */
+    "Stdin": io$0.WriteCloser;
+    "Stdout": io$0.Reader;
+    "Stderr": io$0.Reader;
+
+    /**
+     * Optional PTY resizer for platform-specific implementations
+     */
+    "ResizePTY": any;
+
+    /**
+     * Process control for platforms that don't use exec.Cmd
+     */
+    "Wait": any;
+    "Kill": any;
+    "ClosePTY": any;
+
     /** Creates a new TerminalSession instance. */
     constructor($$source: Partial<TerminalSession> = {}) {
         if (!("ID" in $$source)) {
@@ -343,6 +362,27 @@ export class TerminalSession {
         }
         if (!("IsSSH" in $$source)) {
             this["IsSSH"] = false;
+        }
+        if (!("Stdin" in $$source)) {
+            this["Stdin"] = null;
+        }
+        if (!("Stdout" in $$source)) {
+            this["Stdout"] = null;
+        }
+        if (!("Stderr" in $$source)) {
+            this["Stderr"] = null;
+        }
+        if (!("ResizePTY" in $$source)) {
+            this["ResizePTY"] = null;
+        }
+        if (!("Wait" in $$source)) {
+            this["Wait"] = null;
+        }
+        if (!("Kill" in $$source)) {
+            this["Kill"] = null;
+        }
+        if (!("ClosePTY" in $$source)) {
+            this["ClosePTY"] = null;
         }
 
         Object.assign(this, $$source);

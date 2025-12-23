@@ -3,7 +3,7 @@ export interface SessionNode {
   parentId: string | null;
   name: string;
   type: 'folder' | 'session';
-  sessionType?: 'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'git-bash' | "rdp" | "vnc" | "telnet" | 'custom';
+  sessionType?: 'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'git-bash' | 'rdp' | 'vnc' | 'telnet' | 'custom' | 'powershell' | 'cmd' | 'serial';
   position: number;
   createdAt: string;
   updatedAt: string;

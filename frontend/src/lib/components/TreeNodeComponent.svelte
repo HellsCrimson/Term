@@ -53,6 +53,8 @@
       case 'fish':
         return '💻';
       case 'pwsh':
+      case 'powershell':
+      case 'cmd':
         return '⚡';
       case 'git-bash':
         return '🌿';

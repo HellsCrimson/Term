@@ -10,6 +10,7 @@ require (
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.49
 	github.com/wwt/guac v1.3.2
 	golang.org/x/crypto v0.46.0
+	golang.org/x/sys v0.39.0
 	modernc.org/sqlite v1.41.0
 )
 
@@ -60,7 +61,6 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93 // indirect
 	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

@@ -23,7 +23,7 @@
 
   let itemType = $derived<'folder' | 'session'>(defaultType || 'session');
   let sessionName = $state('');
-  let sessionType = $state<'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'rdp' | 'vnc' | 'telnet'>('bash');
+  let sessionType = $state<'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'powershell' | 'cmd' | 'rdp' | 'vnc' | 'telnet' | 'serial'>('bash');
   let parentId = $derived<string | null>(defaultParentId || null);
 
   // SSH-specific fields
@@ -65,6 +65,12 @@
 
   // Tab state
   let activeTab = $state<'connection' | 'session' | 'display'>('connection');
+
+  // Platform detection (UI gating for Windows-only session types)
+  const isWindows = typeof navigator !== 'undefined' && (
+    (navigator.userAgent && navigator.userAgent.includes('Windows')) ||
+    (navigator.platform && navigator.platform.startsWith('Win'))
+  );
 
   // Reset active tab when session type changes
   $effect(() => {
@@ -317,7 +323,12 @@
                 <option value="bash">Bash</option>
                 <option value="zsh">Zsh</option>
                 <option value="fish">Fish</option>
+                {#if isWindows}
+                <option value="powershell">Windows PowerShell</option>
+                <option value="cmd">Command Prompt</option>
+                {:else}
                 <option value="pwsh">PowerShell</option>
+                {/if}
                 <option value="ssh">SSH</option>
               </optgroup>
               <optgroup label="Remote Desktop">

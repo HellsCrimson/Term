@@ -52,12 +52,6 @@ func New(dbPath string) (*DB, error) {
 		return nil, fmt.Errorf("failed to initialize schema: %w", err)
 	}
 
-	// Run migrations for existing databases
-	if err := db.runMigrations(); err != nil {
-		conn.Close()
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
-	}
-
 	// Bootstrap default data if database is new
 	if err := db.bootstrap(); err != nil {
 		conn.Close()
@@ -71,93 +65,6 @@ func New(dbPath string) (*DB, error) {
 func (db *DB) initSchema() error {
 	_, err := db.conn.Exec(schema)
 	return err
-}
-
-// runMigrations applies database migrations for existing databases
-func (db *DB) runMigrations() error {
-	// Migration: Add rdp, vnc, telnet to session_type constraint
-	// Check if we need to run this migration by trying to insert a test value
-	tx, err := db.conn.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Try to create a temporary RDP session to see if migration is needed
-	testID := "__migration_test__"
-	_, err = tx.Exec(`INSERT INTO sessions (id, name, type, session_type, position) VALUES (?, 'test', 'session', 'rdp', 0)`, testID)
-
-	if err != nil {
-		// Migration needed - recreate the sessions table with updated constraint
-		fmt.Println("Running migration: Adding RDP/VNC/Telnet session types...")
-
-		// Create new sessions table with updated constraint
-		_, err = tx.Exec(`
-			CREATE TABLE sessions_new (
-				id TEXT PRIMARY KEY,
-				parent_id TEXT,
-				name TEXT NOT NULL,
-				type TEXT NOT NULL CHECK(type IN ('folder', 'session')),
-				session_type TEXT CHECK(session_type IN ('ssh', 'bash', 'zsh', 'fish', 'pwsh', 'git-bash', 'custom', 'rdp', 'vnc', 'telnet')),
-				position INTEGER NOT NULL DEFAULT 0,
-				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-				FOREIGN KEY (parent_id) REFERENCES sessions(id) ON DELETE CASCADE
-			)
-		`)
-		if err != nil {
-			return fmt.Errorf("failed to create new sessions table: %w", err)
-		}
-
-		// Copy all data from old table
-		_, err = tx.Exec(`INSERT INTO sessions_new SELECT * FROM sessions`)
-		if err != nil {
-			return fmt.Errorf("failed to copy sessions data: %w", err)
-		}
-
-		// Drop old table
-		_, err = tx.Exec(`DROP TABLE sessions`)
-		if err != nil {
-			return fmt.Errorf("failed to drop old sessions table: %w", err)
-		}
-
-		// Rename new table
-		_, err = tx.Exec(`ALTER TABLE sessions_new RENAME TO sessions`)
-		if err != nil {
-			return fmt.Errorf("failed to rename new sessions table: %w", err)
-		}
-
-		// Recreate indexes
-		_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_sessions_parent_id ON sessions(parent_id)`)
-		if err != nil {
-			return fmt.Errorf("failed to create parent_id index: %w", err)
-		}
-
-		_, err = tx.Exec(`CREATE INDEX IF NOT EXISTS idx_sessions_type ON sessions(type)`)
-		if err != nil {
-			return fmt.Errorf("failed to create type index: %w", err)
-		}
-
-		// Recreate trigger
-		_, err = tx.Exec(`
-			CREATE TRIGGER IF NOT EXISTS update_sessions_timestamp
-				AFTER UPDATE ON sessions
-				FOR EACH ROW
-			BEGIN
-				UPDATE sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-			END
-		`)
-		if err != nil {
-			return fmt.Errorf("failed to create timestamp trigger: %w", err)
-		}
-
-		fmt.Println("Migration completed successfully")
-	} else {
-		// Clean up test row if it was inserted
-		tx.Exec(`DELETE FROM sessions WHERE id = ?`, testID)
-	}
-
-	return tx.Commit()
 }
 
 // bootstrap creates default workspace with example sessions
