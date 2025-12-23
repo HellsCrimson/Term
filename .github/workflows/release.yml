@@ -44,7 +44,7 @@ jobs:
             goos: darwin
             goarch: arm64
             cgo: 1
-            out_name: term
+            out_name: term.app
             archive: zip
 
     steps:
@@ -82,7 +82,18 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Go build
+      - name: Go build other than macos
+        if: matrix.goos != 'darwin'
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: ${{ matrix.cgo }}
+        run: |
+          mkdir -p bin
+          wails3 build
+      
+      - name: Macos build
+        if: matrix.goos == 'darwin'
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -92,7 +103,7 @@ jobs:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.goos == 'darwin' && '10.15' || '' }}
         run: |
           mkdir -p bin
-          wails3 build
+          wails3 task package
 
       - name: Archive artifacts (zip)
         if: matrix.archive == 'zip'
@@ -164,6 +175,11 @@ jobs:
         run: |
           TITLE="${{ github.event.inputs.name }}"
           TAG="${{ github.event.inputs.tag }}"
+          PRERELEASE=""
+
+          if [ "${{ github.event.inputs.prerelease }}" == "true" ]; then
+            PRERELEASE="--prerelease"
+          fi
 
           if [ -z "$TITLE" ]; then
             TITLE="$TAG"
@@ -175,7 +191,7 @@ jobs:
             gh release create "$TAG" \
               release-assets/* \
               --title "$TITLE" \
-              ${{ github.event.inputs.prerelease && '--prerelease' || '' }} \
+              $PRERELEASE \
               --generate-notes
           else
             echo "Tag $TAG does not exist, creating new tag and release"
@@ -183,6 +199,6 @@ jobs:
               release-assets/* \
               --title "$TITLE" \
               --target "${{ github.sha }}" \
-              ${{ github.event.inputs.prerelease && '--prerelease' || '' }} \
+              $PRERELEASE \
               --generate-notes
           fi
