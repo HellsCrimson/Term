@@ -5,6 +5,7 @@ import * as SystemStatsService from '$bindings/term/systemstatsservice';
 import { Events } from '@wailsio/runtime';
 import { settingsStore } from './settings.svelte';
 import * as LoggingService from '$bindings/term/loggingservice';
+import { alertsStore } from '$lib/stores/alerts.svelte';
 
 export interface TerminalTab {
   id: string;
@@ -86,7 +87,7 @@ class TerminalsStore {
     return this.tabs.find(tab => tab.id === id);
   }
 
-  closeTab(id: string, skipConfirmation: boolean = false) {
+  async closeTab(id: string, skipConfirmation: boolean = false) {
     LoggingService.Log(`closeTab called: id=${id}, skipConfirmation=${skipConfirmation}`, "INFO");
     const tab = this.getTab(id);
     if (!tab) {
@@ -99,7 +100,7 @@ class TerminalsStore {
     // Prevent closing pinned tabs unless explicitly skipping confirmation
     if (tab.pinned && !skipConfirmation) {
       LoggingService.Log('Cannot close pinned tab', "INFO");
-      alert(`Tab "${tab.sessionName}" is pinned. Unpin it first to close.`);
+      await alertsStore.alert(`Tab "${tab.sessionName}" is pinned. Unpin it first to close.`, 'Pinned Tab');
       return;
     }
 
@@ -108,7 +109,8 @@ class TerminalsStore {
     // Check for confirmation if enabled and not exited
     if (!skipConfirmation && settingsStore.settings.confirmTabClose && !tab.exited) {
       LoggingService.Log('Showing confirmation dialog', "INFO");
-      if (!confirm(`Close tab "${tab.sessionName}"?`)) {
+      const ok = await alertsStore.confirm(`Close tab "${tab.sessionName}"?`, 'Close Tab');
+      if (!ok) {
         LoggingService.Log('User cancelled close', "INFO");
         return;
       }
@@ -119,7 +121,7 @@ class TerminalsStore {
 
     // Close backend session
     if (!tab.exited) {
-      this.closeSession(tab.backendSessionId);
+      await this.closeSession(tab.backendSessionId);
     }
 
     // Dispose terminal

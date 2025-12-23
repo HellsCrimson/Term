@@ -11,6 +11,7 @@
   import { terminalsStore } from './lib/stores/terminals.svelte';
   import { themeStore } from './lib/stores/themeStore';
   import * as LoggingService from '$bindings/term/loggingservice';
+  import AlertHost from '$lib/components/common/AlertHost.svelte';
 
   let sidebarWidth = $state(250);
   let resizing = $state(false);
@@ -251,8 +252,9 @@
           {#if lastKeyPressed}
             <div class="text-xs" style="color: var(--text-muted)">
               Last key: {lastKeyPressed}
-            </div>
-          {/if}
+  </div>
+  <AlertHost />
+{/if}
           <div class="text-xs" style="color: var(--text-muted)">
             Restore: {settingsStore.settings.restoreTabsOnStartup ? 'ON' : 'OFF'} |
             Confirm: {settingsStore.settings.confirmTabClose ? 'ON' : 'OFF'}

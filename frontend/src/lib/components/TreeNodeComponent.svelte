@@ -7,6 +7,7 @@
   import { sessionsStore } from '../stores/sessions.svelte';
   import * as LoggingService from '$bindings/term/loggingservice';
   import TreeNodeComponent from './TreeNodeComponent.svelte'
+  import { alertsStore } from '$lib/stores/alerts.svelte';
 
   interface Props {
     node: TreeNode;
@@ -101,12 +102,12 @@
       ? `Delete folder "${node.session.name}"? This will also delete all items inside.`
       : `Delete session "${node.session.name}"?`;
 
-    if (confirm(confirmMsg)) {
+    if (await alertsStore.confirm(confirmMsg, 'Delete')) {
       try {
         await sessionsStore.deleteSession(node.session.id, true);
       } catch (error) {
         console.error('Failed to delete:', error);
-        alert('Failed to delete: ' + error);
+        await alertsStore.alert('Failed to delete: ' + error, 'Error');
       }
     }
   }
@@ -125,7 +126,7 @@
         await sessionsStore.createSession(newSession);
       } catch (error) {
         console.error('Failed to duplicate:', error);
-        alert('Failed to duplicate: ' + error);
+        await alertsStore.alert('Failed to duplicate: ' + error, 'Error');
       }
     }
   }
@@ -278,7 +279,7 @@
 
       // Don't drop parent into child
       if (isDescendant(draggedId, node.session.id)) {
-        alert('Cannot move a folder into its own child');
+        await alertsStore.alert('Cannot move a folder into its own child', 'Invalid Move');
         return;
       }
 
@@ -343,7 +344,7 @@
 
     } catch (error) {
       LoggingService.Log('Drop failed: ' + error, "ERROR");
-      alert('Failed to move: ' + error);
+      await alertsStore.alert('Failed to move: ' + error, 'Error');
     }
   }
 

@@ -2,6 +2,7 @@
   import type { TerminalTab } from '../stores/terminals.svelte';
   import { Dialogs, Events } from '@wailsio/runtime';
   import { LoggingService, SftpService } from '$bindings/term';
+  import { alertsStore } from '$lib/stores/alerts.svelte';
   import { formatBytes } from '$lib/utils/format';
 
   interface Props { tab: TerminalTab }
@@ -123,7 +124,8 @@
 
   async function deleteSelected() {
     if (!selected) return;
-    if (!confirm(`Delete ${selected.isDir ? 'folder' : 'file'} "${selected.name}"?`)) return;
+    const ok = await alertsStore.confirm(`Delete ${selected.isDir ? 'folder' : 'file'} "${selected.name}"?`, 'Delete');
+    if (!ok) return;
     await SftpService.HandleSSHFSDelete(tab.backendSessionId, selected.path);
     selected = null;
     await list(currentPath);

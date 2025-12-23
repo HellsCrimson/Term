@@ -2,6 +2,7 @@
   import { settingsStore } from '../stores/settings.svelte';
   import { themeStore } from '../stores/themeStore';
   import { Browser, Dialogs } from '@wailsio/runtime'
+  import { alertsStore } from '$lib/stores/alerts.svelte';
   import Modal from './common/Modal.svelte';
   import ToggleSwitch from './common/ToggleSwitch.svelte';
 
@@ -97,7 +98,7 @@
       onClose();
     } catch (error) {
       console.error('Failed to save settings:', error);
-      alert('Failed to save settings: ' + error);
+      await alertsStore.alert('Failed to save settings: ' + error, 'Error');
     } finally {
       saving = false;
     }

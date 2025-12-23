@@ -11,6 +11,7 @@
   import VNCConnectionForm from './common/VNCConnectionForm.svelte';
   import TelnetConnectionForm from './common/TelnetConnectionForm.svelte';
   import TerminalSessionForm from './common/TerminalSessionForm.svelte';
+  import { alertsStore } from '$lib/stores/alerts.svelte';
 
   interface Props {
     show: boolean;
@@ -92,7 +93,7 @@
     // (username, auth, etc. can be inherited from parent folder)
     if (itemType === 'session' && sessionType === 'ssh') {
       if (!sshHost.trim()) {
-        alert('SSH host is required (other fields can be inherited from folder)');
+        await alertsStore.alert('SSH host is required (other fields can be inherited from folder)', 'Validation');
         return;
       }
     }
@@ -100,7 +101,7 @@
     // Validation for RDP
     if (itemType === 'session' && sessionType === 'rdp') {
       if (!rdpHost.trim()) {
-        alert('RDP host is required');
+        await alertsStore.alert('RDP host is required', 'Validation');
         return;
       }
     }
@@ -108,7 +109,7 @@
     // Validation for VNC
     if (itemType === 'session' && sessionType === 'vnc') {
       if (!vncHost.trim()) {
-        alert('VNC host is required');
+        await alertsStore.alert('VNC host is required', 'Validation');
         return;
       }
     }
@@ -116,7 +117,7 @@
     // Validation for Telnet
     if (itemType === 'session' && sessionType === 'telnet') {
       if (!telnetHost.trim()) {
-        alert('Telnet host is required');
+        await alertsStore.alert('Telnet host is required', 'Validation');
         return;
       }
     }
@@ -231,7 +232,7 @@
         // Custom shell requires the command to be set
         if (sessionType === 'custom') {
           if (!customCommand.trim()) {
-            alert('Custom command is required for custom sessions');
+            await alertsStore.alert('Custom command is required for custom sessions', 'Validation');
             return;
           }
           await sessionsStore.setSessionConfig(sessionId, 'command', customCommand.toString());
@@ -252,7 +253,7 @@
       onClose();
     } catch (error) {
       LoggingService.Log(`Failed to create ${itemType}: ${error}`, "ERROR");
-      alert(`Failed to create ${itemType}: ` + error);
+      await alertsStore.alert(`Failed to create ${itemType}: ` + error, 'Error');
     }
   }
 

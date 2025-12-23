@@ -9,13 +9,15 @@
     panelClass?: string;
     /** If true, clicking outside the panel closes the modal */
     closeOnOverlay?: boolean;
+    /** Optional z-index for overlay (default 50) */
+    zIndex?: number;
     /** Default slot */
     children?: () => any;
     /** Named footer slot */
     footer?: () => any;
   }
 
-  let { show, title, onClose, panelClass = 'w-96', closeOnOverlay = true, children, footer }: Props = $props();
+  let { show, title, onClose, panelClass = 'w-96', closeOnOverlay = true, zIndex = 50, children, footer }: Props = $props();
 
   let panelEl: HTMLDivElement | null = $state(null);
 
@@ -41,8 +43,8 @@
 
 {#if show}
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center"
-    style="background: rgba(0,0,0,0.5)"
+    class="fixed inset-0 flex items-center justify-center"
+    style={`background: rgba(0,0,0,0.5); z-index: ${zIndex}`}
     onclick={handleOverlayClick}
     role="dialog"
     tabindex="0"

@@ -11,6 +11,7 @@
   import TelnetConnectionForm from './common/TelnetConnectionForm.svelte';
     import TerminalSessionForm from './common/TerminalSessionForm.svelte';
     import SSHDefaultsForm from './common/SSHDefaultsForm.svelte';
+  import { alertsStore } from '$lib/stores/alerts.svelte';
 
   interface Props {
     show: boolean;
@@ -134,7 +135,7 @@
     if (!session) return;
 
     if (!sessionName.trim()) {
-      alert('Name is required');
+      await alertsStore.alert('Name is required', 'Validation');
       return;
     }
 
@@ -142,7 +143,7 @@
     // Only host is required - other fields can be inherited
     if (session.sessionType === 'ssh') {
       if (!sshHost.trim()) {
-        alert('SSH host is required (other fields can be inherited from folder)');
+        await alertsStore.alert('SSH host is required (other fields can be inherited from folder)', 'Validation');
         return;
       }
     }
@@ -150,7 +151,7 @@
     // Validation for RDP
     if (session.sessionType === 'rdp') {
       if (!rdpHost.trim()) {
-        alert('RDP host is required');
+        await alertsStore.alert('RDP host is required', 'Validation');
         return;
       }
     }
@@ -158,7 +159,7 @@
     // Validation for VNC
     if (session.sessionType === 'vnc') {
       if (!vncHost.trim()) {
-        alert('VNC host is required');
+        await alertsStore.alert('VNC host is required', 'Validation');
         return;
       }
     }
@@ -166,7 +167,7 @@
     // Validation for Telnet
     if (session.sessionType === 'telnet') {
       if (!telnetHost.trim()) {
-        alert('Telnet host is required');
+        await alertsStore.alert('Telnet host is required', 'Validation');
         return;
       }
     }
@@ -328,7 +329,7 @@
       onClose();
     } catch (error) {
       console.error('Failed to save session:', error);
-      alert('Failed to save session: ' + error);
+      await alertsStore.alert('Failed to save session: ' + error, 'Error');
     }
   }
 
