@@ -1,7 +1,7 @@
 <script lang="ts">
   import { settingsStore } from '../stores/settings.svelte';
   import { themeStore } from '../stores/themeStore';
-  import { Browser } from '@wailsio/runtime'
+  import { Browser, Dialogs } from '@wailsio/runtime'
   import Modal from './common/Modal.svelte';
   import ToggleSwitch from './common/ToggleSwitch.svelte';
 
@@ -194,19 +194,19 @@
             <!-- Import/Export themes -->
             <div class="mt-4 space-y-3">
               <div>
-                <label for="import_path" class="block text-sm font-medium mb-1">Import theme from JSON</label>
+                <label for="import_theme" class="block text-sm font-medium mb-1">Import theme from JSON</label>
                 <div class="flex gap-2">
-                  <input
-                    id="import_path"
-                    type="text"
-                    bind:value={importPath}
-                    placeholder="/path/to/theme.json"
-                    class="flex-1 px-3 py-2 rounded border focus:outline-none"
-                    style="background: var(--bg-tertiary); border-color: var(--border-color)" />
-                  <button class="px-3 py-2 rounded text-white"
+                  <button id="import_theme" class="px-3 py-2 rounded text-white"
                           style="background: var(--accent-green)"
-                          onclick={async () => { if (!importPath) return; await themeStore.importTheme(importPath); }}>
-                    Import
+                          onclick={async () => {
+                            const path = await Dialogs.OpenFile({
+                              Title: 'Select theme JSON',
+                              Filters: [{ DisplayName: 'JSON files', Pattern: '*.json' }]
+                            } as any);
+                            if (!path) return;
+                            await themeStore.importTheme(String(path));
+                          }}>
+                    Choose File…
                   </button>
                 </div>
                 <p class="text-xs mt-1" style="color: var(--text-muted)">
@@ -214,20 +214,24 @@
                 </p>
               </div>
               <div>
-                <label for="export_path" class="block text-sm font-medium mb-1">Export current theme</label>
+                <label for="export_theme" class="block text-sm font-medium mb-1">Export current theme</label>
                 <div class="flex gap-2">
-                  <input
-                    id="export_path"
-                    type="text"
-                    bind:value={exportPath}
-                    placeholder="/path/to/save/theme.json"
-                    class="flex-1 px-3 py-2 rounded border focus:outline-none"
-                    style="background: var(--bg-tertiary); border-color: var(--border-color)" />
-                  <button class="px-3 py-2 rounded text-white disabled:opacity-60"
+                  <button id="export_theme" class="px-3 py-2 rounded text-white disabled:opacity-60"
                           style="background: var(--accent-blue)"
                           disabled={exporting || !$themeStore.activeTheme}
-                          onclick={async () => { if (!exportPath || !$themeStore.activeTheme) return; exporting = true; try { await themeStore.exportTheme($themeStore.activeTheme.id, exportPath); } finally { exporting = false; } }}>
-                    Export
+                          onclick={async () => {
+                            if (!$themeStore.activeTheme) return;
+                            const suggested = `${$themeStore.activeTheme.id || 'theme'}.json`;
+                            const dest = await Dialogs.SaveFile({ Filename: suggested } as any);
+                            if (!dest) return;
+                            exporting = true;
+                            try {
+                              await themeStore.exportTheme($themeStore.activeTheme.id, String(dest));
+                            } finally {
+                              exporting = false;
+                            }
+                          }}>
+                    Save As…
                   </button>
                 </div>
               </div>
