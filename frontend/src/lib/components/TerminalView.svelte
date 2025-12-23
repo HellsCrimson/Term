@@ -86,8 +86,8 @@
     }
 
     // Resolve current theme colors (fallbacks in case not loaded yet)
-    const activeTheme = $themeStore.activeTheme;
-    const t = activeTheme?.terminal;
+    const liveTheme = $themeStore.previewTheme || $themeStore.activeTheme;
+    const t = liveTheme?.terminal;
 
     // Create terminal instance
     terminal = new Terminal({
@@ -206,9 +206,9 @@
   // React to theme changes and update the live terminal instance
   $effect(() => {
     if (!terminal) return;
-    const activeTheme = $themeStore.activeTheme;
-    if (!activeTheme) return;
-    const t = activeTheme.terminal;
+    const liveTheme = $themeStore.previewTheme || $themeStore.activeTheme;
+    if (!liveTheme) return;
+    const t = liveTheme.terminal;
     // Update theme on the existing terminal instance
     terminal.options.theme = {
       background: t.background,

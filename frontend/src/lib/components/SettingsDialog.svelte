@@ -27,17 +27,37 @@
   let exportPath = $state('');
   let exporting = $state(false);
 
+  // Live theme preview helper
+  function previewSelectedTheme() {
+    const store = $themeStore;
+    const themes = store.themes || [];
+    const preview = themes.find(t => t.id === selectedThemeId) || null;
+    themeStore.setPreviewTheme(preview);
+  }
+
   // Update local state when settings change (but not while saving)
+  // Do NOT overwrite selectedThemeId here; the user is interacting with it.
   $effect(() => {
     if (!saving) {
       theme = settingsStore.settings.theme;
-      selectedThemeId = $themeStore.activeTheme?.id || 'dark';
       fontFamily = settingsStore.settings.fontFamily;
       fontSize = settingsStore.settings.fontSize;
       autoLaunch = settingsStore.settings.autoLaunch;
       restoreTabsOnStartup = settingsStore.settings.restoreTabsOnStartup;
       confirmTabClose = settingsStore.settings.confirmTabClose;
       showStatusBar = settingsStore.settings.showStatusBar;
+    }
+  });
+
+  // Initialize the selection from the active theme when the dialog opens
+  let initializedSelection = $state(false);
+  $effect(() => {
+    if (show && !initializedSelection) {
+      selectedThemeId = $themeStore.activeTheme?.id || 'dark';
+      initializedSelection = true;
+    }
+    if (!show && initializedSelection) {
+      initializedSelection = false;
     }
   });
 
@@ -92,6 +112,9 @@
     autoLaunch = settingsStore.settings.autoLaunch;
     restoreTabsOnStartup = settingsStore.settings.restoreTabsOnStartup;
     confirmTabClose = settingsStore.settings.confirmTabClose;
+    // Re-apply the active theme to undo any live preview
+    themeStore.setPreviewTheme(null);
+    if ($themeStore.activeTheme) themeStore.applyTheme($themeStore.activeTheme);
     onClose();
   }
 
@@ -124,6 +147,7 @@
                 bind:value={selectedThemeId}
                 class="w-full px-3 py-2 rounded focus:outline-none border"
                 style="background: var(--bg-tertiary); border-color: var(--border-color)"
+                onchange={previewSelectedTheme}
               >
                 {#each $themeStore.themes as themeOption}
                   <option value={themeOption.id}>
@@ -135,6 +159,9 @@
                 {#if $themeStore.activeTheme}
                   Currently active: {$themeStore.activeTheme.name}
                 {/if}
+              </p>
+              <p class="text-xs mt-1" style="color: var(--text-muted)">
+                Live preview updates as you change selection. Click Save to keep it, or Cancel to revert.
               </p>
             </div>
 

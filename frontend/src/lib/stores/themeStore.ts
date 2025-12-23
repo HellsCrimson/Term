@@ -62,12 +62,14 @@ export interface Theme {
 interface ThemeStore {
   themes: Theme[];
   activeTheme: Theme | null;
+  previewTheme?: Theme | null;
 }
 
 function createThemeStore() {
   const { subscribe, set, update } = writable<ThemeStore>({
     themes: [],
-    activeTheme: null
+    activeTheme: null,
+    previewTheme: null
   });
 
   return {
@@ -82,7 +84,8 @@ function createThemeStore() {
 
         update(state => ({
           themes: themes || [],
-          activeTheme: activeTheme || null
+          activeTheme: activeTheme || null,
+          previewTheme: null
         }));
 
         // Apply the active theme
@@ -104,12 +107,24 @@ function createThemeStore() {
 
         update(state => ({
           ...state,
-          activeTheme: theme
+          activeTheme: theme,
+          previewTheme: null
         }));
 
         this.applyTheme(theme);
       } catch (error) {
         console.error('Failed to set theme:', error);
+      }
+    },
+
+    // Set a temporary preview theme without persisting
+    setPreviewTheme(theme: Theme | null) {
+      update(state => ({
+        ...state,
+        previewTheme: theme
+      }));
+      if (theme) {
+        this.applyTheme(theme);
       }
     },
 
