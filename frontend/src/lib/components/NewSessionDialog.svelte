@@ -23,7 +23,7 @@
 
   let itemType = $derived<'folder' | 'session'>(defaultType || 'session');
   let sessionName = $state('');
-  let sessionType = $state<'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'powershell' | 'cmd' | 'rdp' | 'vnc' | 'telnet' | 'serial'>('bash');
+  let sessionType = $state<'ssh' | 'bash' | 'zsh' | 'fish' | 'pwsh' | 'powershell' | 'cmd' | 'custom' | 'rdp' | 'vnc' | 'telnet' | 'serial'>('bash');
   let parentId = $derived<string | null>(defaultParentId || null);
 
   // SSH-specific fields
@@ -38,6 +38,7 @@
   let workingDirectory = $state('');
   let startupCommands = $state('');
   let environmentVariables = $state('');
+  let customCommand = $state('');
 
   // RDP-specific fields
   let rdpHost = $state('');
@@ -227,6 +228,15 @@
       if (itemType === 'session' && !['rdp', 'vnc', 'telnet'].includes(sessionType)) {
         const sessionId = newItem.id;
 
+        // Custom shell requires the command to be set
+        if (sessionType === 'custom') {
+          if (!customCommand.trim()) {
+            alert('Custom command is required for custom sessions');
+            return;
+          }
+          await sessionsStore.setSessionConfig(sessionId, 'command', customCommand.toString());
+        }
+
         if (workingDirectory.trim()) {
           await sessionsStore.setSessionConfig(sessionId, 'working_directory', workingDirectory.toString());
         }
@@ -265,6 +275,7 @@
     workingDirectory = '';
     startupCommands = '';
     environmentVariables = '';
+    customCommand = '';
     rdpHost = '';
     rdpPort = '3389';
     rdpUsername = '';
@@ -329,6 +340,7 @@
                 {:else}
                 <option value="pwsh">PowerShell</option>
                 {/if}
+                <option value="custom">Custom</option>
                 <option value="ssh">SSH</option>
               </optgroup>
               <optgroup label="Remote Desktop">
@@ -437,6 +449,15 @@
             <!-- Tab Content -->
               <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
                 <h4 class="text-sm font-medium text-purple-400">Session Configuration</h4>
+                {#if sessionType === 'custom'}
+                  <LabeledInput
+                    id="custom_command"
+                    label="Custom Command"
+                    bind:value={customCommand}
+                    placeholder={isWindows ? 'C:/Path/To/app.exe (no args)' : '/usr/bin/zsh'}
+                    hint="Full path to the executable (no arguments)."
+                  />
+                {/if}
                 <TerminalSessionForm bind:workingDirectory={workingDirectory} bind:startupCommands={startupCommands} bind:environmentVariables={environmentVariables} />
                 <p class="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-600">💡 Tip: Leave fields empty to inherit values from the parent folder</p>
               </div>

@@ -30,6 +30,7 @@
   let workingDirectory = $state('');
   let startupCommands = $state('');
   let environmentVariables = $state('');
+  let customCommand = $state('');
   let loading = $state(false);
   let inheritedConfig = $state<Record<string, string>>({});
 
@@ -97,6 +98,7 @@
       workingDirectory = directConfig.working_directory || '';
       startupCommands = directConfig.startup_commands || '';
       environmentVariables = directConfig.environment_variables || '';
+      customCommand = directConfig.command || '';
 
       // Load RDP config
       rdpHost = directConfig.rdp_host || '';
@@ -180,6 +182,9 @@
 
       // Save general session config (for terminal session types only)
       if (session.type === 'session' && !['rdp', 'vnc', 'telnet'].includes(session.sessionType || '')) {
+        if (session.sessionType === 'custom' && customCommand.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'command', customCommand.toString());
+        }
         if (workingDirectory.trim()) {
           await sessionsStore.setSessionConfig(session.id, 'working_directory', workingDirectory.toString());
         }
@@ -286,6 +291,9 @@
         }
 
         // Terminal config
+        if (customCommand.trim()) {
+          await sessionsStore.setSessionConfig(session.id, 'command', customCommand.toString());
+        }
         if (workingDirectory.trim()) {
           await sessionsStore.setSessionConfig(session.id, 'working_directory', workingDirectory.toString());
         }
@@ -467,6 +475,9 @@
             <!-- Tab Content -->
             <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
               <h4 class="text-sm font-medium text-purple-400">Session Configuration</h4>
+              {#if session.sessionType === 'custom'}
+                <LabeledInput id="custom_command" label="Custom Command" bind:value={customCommand} placeholder={inheritedConfig.command ? `Inherited: ${inheritedConfig.command}` : ''} inherited={inheritedConfig.command || ''} hint="Full path to the executable (no arguments)." />
+              {/if}
               <TerminalSessionForm bind:workingDirectory={workingDirectory} bind:startupCommands={startupCommands} bind:environmentVariables={environmentVariables} inherited={inheritedConfig} rowsCommands={3} rowsEnv={3} />
             </div>
           {/if}
@@ -489,6 +500,7 @@
             {:else if activeTab === 'session'}
               <div class="space-y-3 p-3 bg-gray-700/50 rounded border border-gray-600">
                 <h4 class="text-sm font-medium text-purple-400">Terminal Configuration</h4>
+                <LabeledInput id="custom_command_folder" label="Default Custom Command" bind:value={customCommand} placeholder={inheritedConfig.command ? `Inherited: ${inheritedConfig.command}` : ''} inherited={inheritedConfig.command || ''} hint="Set a default custom executable for child sessions (no arguments)." />
                 <p class="text-xs text-gray-400">Settings inherited by terminal sessions (bash, zsh, fish, pwsh)</p>
                 <TerminalSessionForm bind:workingDirectory={workingDirectory} bind:startupCommands={startupCommands} bind:environmentVariables={environmentVariables} inherited={inheritedConfig} />
               </div>
