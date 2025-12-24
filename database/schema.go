@@ -114,4 +114,28 @@ CREATE TABLE IF NOT EXISTS recording_keys (
 );
 
 CREATE INDEX IF NOT EXISTS idx_recordings_session ON recordings(backend_session_id);
+
+-- User keys for secure sharing (RSA key pairs)
+CREATE TABLE IF NOT EXISTS user_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,              -- User-friendly identifier (e.g., "alice@example.com" or "Alice's Laptop")
+    public_key TEXT NOT NULL,        -- PEM-encoded RSA public key
+    private_key TEXT,                -- PEM-encoded RSA private key (only for local user's key)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_local INTEGER NOT NULL DEFAULT 0  -- 1 if this is the current user's key, 0 for recipient keys
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_keys_is_local ON user_keys(is_local);
+
+-- Recipient keys: wrapped file keys for sharing recordings
+CREATE TABLE IF NOT EXISTS recipient_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    recording_id INTEGER NOT NULL,
+    recipient_name TEXT NOT NULL,    -- Name of the recipient
+    wrapped_key TEXT NOT NULL,       -- Base64-encoded RSA-OAEP wrapped file key
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (recording_id) REFERENCES recordings(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_recipient_keys_recording ON recipient_keys(recording_id);
 `

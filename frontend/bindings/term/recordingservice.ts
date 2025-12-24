@@ -21,6 +21,13 @@ export function AppendResize(sessionID: string, cols: number, rows: number): $Ca
     return $Call.ByID(277338562, sessionID, cols, rows);
 }
 
+/**
+ * ShareRecording creates a wrapped key for a recipient to access a recording
+ */
+export function ShareRecording(recordingID: number, recipientName: string, recipientPublicKeyPEM: string): $CancellablePromise<void> {
+    return $Call.ByID(3452510072, recordingID, recipientName, recipientPublicKeyPEM);
+}
+
 export function Start(opts: $models.RecordingOptions): $CancellablePromise<void> {
     return $Call.ByID(3617325250, opts);
 }

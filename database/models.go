@@ -77,6 +77,25 @@ type RecordingKey struct {
     CreatedAt     time.Time `json:"createdAt"`
 }
 
+// UserKey represents a user's public/private key pair for sharing
+type UserKey struct {
+    ID         int       `json:"id"`
+    Name       string    `json:"name"`        // User-friendly identifier
+    PublicKey  string    `json:"publicKey"`   // PEM-encoded RSA public key
+    PrivateKey string    `json:"privateKey"`  // PEM-encoded RSA private key (only for local user)
+    CreatedAt  time.Time `json:"createdAt"`
+    IsLocal    bool      `json:"isLocal"`     // True if this is the current user's key
+}
+
+// RecipientKey represents a wrapped file key for a recipient
+type RecipientKey struct {
+    ID            int       `json:"id"`
+    RecordingID   int       `json:"recordingId"`
+    RecipientName string    `json:"recipientName"` // Name of the recipient
+    WrappedKey    string    `json:"wrappedKey"`    // Base64-encoded RSA-OAEP wrapped file key
+    CreatedAt     time.Time `json:"createdAt"`
+}
+
 // GetAllSessions retrieves all session nodes
 func (db *DB) GetAllSessions() ([]SessionNode, error) {
 	rows, err := db.conn.Query(`
@@ -581,5 +600,146 @@ func (db *DB) ListRecordings() ([]Recording, error) {
 // DeleteRecording removes recording by id (and its key). Caller should delete file too.
 func (db *DB) DeleteRecording(id int) error {
     _, err := db.conn.Exec(`DELETE FROM recordings WHERE id = ?`, id)
+    return err
+}
+
+// GetRecordingKey retrieves the encrypted key for a recording
+func (db *DB) GetRecordingKey(recordingID int) (*RecordingKey, error) {
+    var rk RecordingKey
+    err := db.conn.QueryRow(`
+        SELECT id, recording_id, enc_key, enc_key_nonce, alg, kdf, created_at
+        FROM recording_keys WHERE recording_id = ?
+    `, recordingID).Scan(&rk.ID, &rk.RecordingID, &rk.EncKey, &rk.EncKeyNonce, &rk.Alg, &rk.KDF, &rk.CreatedAt)
+    if err != nil {
+        return nil, err
+    }
+    return &rk, nil
+}
+
+// SaveUserKey saves a user key to the database
+func (db *DB) SaveUserKey(key *UserKey) error {
+    result, err := db.conn.Exec(`
+        INSERT INTO user_keys (name, public_key, private_key, created_at, is_local)
+        VALUES (?, ?, ?, ?, ?)
+    `, key.Name, key.PublicKey, key.PrivateKey, key.CreatedAt, boolToInt(key.IsLocal))
+
+    if err != nil {
+        return err
+    }
+
+    id, err := result.LastInsertId()
+    if err != nil {
+        return err
+    }
+    key.ID = int(id)
+    return nil
+}
+
+// GetUserKey gets a user key by ID
+func (db *DB) GetUserKey(id int) (*UserKey, error) {
+    var key UserKey
+    var isLocal int
+    err := db.conn.QueryRow(`
+        SELECT id, name, public_key, private_key, created_at, is_local
+        FROM user_keys WHERE id = ?
+    `, id).Scan(&key.ID, &key.Name, &key.PublicKey, &key.PrivateKey, &key.CreatedAt, &isLocal)
+
+    if err != nil {
+        return nil, err
+    }
+    key.IsLocal = isLocal != 0
+    return &key, nil
+}
+
+// GetLocalUserKey gets the local user's key
+func (db *DB) GetLocalUserKey() (*UserKey, error) {
+    var key UserKey
+    var isLocal int
+    err := db.conn.QueryRow(`
+        SELECT id, name, public_key, private_key, created_at, is_local
+        FROM user_keys WHERE is_local = 1 LIMIT 1
+    `).Scan(&key.ID, &key.Name, &key.PublicKey, &key.PrivateKey, &key.CreatedAt, &isLocal)
+
+    if err != nil {
+        return nil, err
+    }
+    key.IsLocal = isLocal != 0
+    return &key, nil
+}
+
+// ListUserKeys lists all user keys (contacts)
+func (db *DB) ListUserKeys() ([]*UserKey, error) {
+    rows, err := db.conn.Query(`
+        SELECT id, name, public_key, private_key, created_at, is_local
+        FROM user_keys ORDER BY is_local DESC, name ASC
+    `)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var keys []*UserKey
+    for rows.Next() {
+        var key UserKey
+        var isLocal int
+        if err := rows.Scan(&key.ID, &key.Name, &key.PublicKey, &key.PrivateKey, &key.CreatedAt, &isLocal); err != nil {
+            return nil, err
+        }
+        key.IsLocal = isLocal != 0
+        keys = append(keys, &key)
+    }
+    return keys, nil
+}
+
+// DeleteUserKey deletes a user key
+func (db *DB) DeleteUserKey(id int) error {
+    _, err := db.conn.Exec(`DELETE FROM user_keys WHERE id = ?`, id)
+    return err
+}
+
+// SaveRecipientKey saves a wrapped key for a recipient
+func (db *DB) SaveRecipientKey(rk *RecipientKey) error {
+    result, err := db.conn.Exec(`
+        INSERT INTO recipient_keys (recording_id, recipient_name, wrapped_key, created_at)
+        VALUES (?, ?, ?, ?)
+    `, rk.RecordingID, rk.RecipientName, rk.WrappedKey, rk.CreatedAt)
+
+    if err != nil {
+        return err
+    }
+
+    id, err := result.LastInsertId()
+    if err != nil {
+        return err
+    }
+    rk.ID = int(id)
+    return nil
+}
+
+// GetRecipientKeysForRecording gets all recipient keys for a recording
+func (db *DB) GetRecipientKeysForRecording(recordingID int) ([]*RecipientKey, error) {
+    rows, err := db.conn.Query(`
+        SELECT id, recording_id, recipient_name, wrapped_key, created_at
+        FROM recipient_keys WHERE recording_id = ? ORDER BY created_at DESC
+    `, recordingID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var keys []*RecipientKey
+    for rows.Next() {
+        var key RecipientKey
+        if err := rows.Scan(&key.ID, &key.RecordingID, &key.RecipientName, &key.WrappedKey, &key.CreatedAt); err != nil {
+            return nil, err
+        }
+        keys = append(keys, &key)
+    }
+    return keys, nil
+}
+
+// DeleteRecipientKey deletes a recipient key
+func (db *DB) DeleteRecipientKey(id int) error {
+    _, err := db.conn.Exec(`DELETE FROM recipient_keys WHERE id = ?`, id)
     return err
 }

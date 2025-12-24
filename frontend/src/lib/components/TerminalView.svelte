@@ -8,6 +8,7 @@
   import { themeStore } from '../stores/themeStore';
   import StatusBar from './StatusBar.svelte';
   import RemoteFileBrowser from './RemoteFileBrowser.svelte';
+  import PassphraseDialog from './PassphraseDialog.svelte';
   import Modal from './common/Modal.svelte';
   import { Events } from '@wailsio/runtime';
 
@@ -24,6 +25,8 @@
   let currentFontSize = $state(settingsStore.settings.fontSize);
   let showFileOverlay = $state(false);
   let recordActive = $state(false);
+  let showPassphraseDialog = $state(false);
+  let pendingRecordingOptions: any = $state(null);
   
 
   // Focus terminal when tab becomes active
@@ -213,15 +216,18 @@
     const rows = terminal.rows;
     const captureInput = settingsStore.settings.recordingDefaultCaptureInput;
     const encrypt = settingsStore.settings.recordingDefaultEncrypt;
-    let passphrase = '';
+
     if (encrypt) {
-      passphrase = prompt('Enter passphrase for recording encryption (Argon2-derived):') || '';
-      if (!passphrase) {
-        const retry = confirm('No passphrase entered. Continue without encryption?');
-        if (!retry) return; // cancel
-        // continue with encrypt=false
-      }
+      // Store recording options and show passphrase dialog
+      pendingRecordingOptions = { cols, rows, captureInput, encrypt };
+      showPassphraseDialog = true;
+    } else {
+      // Start recording without encryption
+      await doStartRecording('', cols, rows, captureInput, false);
     }
+  }
+
+  async function doStartRecording(passphrase: string, cols: number, rows: number, captureInput: boolean, encrypt: boolean) {
     await Events.Emit('recording:start', {
       sessionId: tab.backendSessionId,
       sessionName: tab.sessionName,
@@ -232,6 +238,19 @@
       encrypt: encrypt && !!passphrase,
       passphrase
     } as any);
+  }
+
+  function handlePassphraseSubmit(passphrase: string) {
+    if (pendingRecordingOptions) {
+      const opts = pendingRecordingOptions;
+      doStartRecording(passphrase, opts.cols, opts.rows, opts.captureInput, opts.encrypt);
+      pendingRecordingOptions = null;
+    }
+  }
+
+  function handlePassphraseCancel() {
+    pendingRecordingOptions = null;
+    showPassphraseDialog = false;
   }
 
   // React to theme changes and update the live terminal instance
@@ -327,6 +346,14 @@
       {/snippet}
     </Modal>
   {/if}
+
+  <PassphraseDialog
+    show={showPassphraseDialog}
+    title="Recording Encryption"
+    message="Enter passphrase for recording encryption (Argon2-derived):"
+    onSubmit={handlePassphraseSubmit}
+    onClose={handlePassphraseCancel}
+  />
 
   <StatusBar />
 </div>

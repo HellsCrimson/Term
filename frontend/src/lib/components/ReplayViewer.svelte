@@ -30,6 +30,9 @@
   let unsubResize: (() => void) | null = null;
   let unsubEnded: (() => void) | null = null;
   let resizeObserver: ResizeObserver | null = null;
+  let playing = $state(true);
+  let elapsedNs = $state(0);
+  let totalNs = $state(0);
 
   onMount(() => {
     const liveTheme = $themeStore.previewTheme || $themeStore.activeTheme;
@@ -92,6 +95,17 @@
       // Adjust size on header
       try { fitAddon?.fit(); } catch {}
     });
+    Events.On('recording:replay:meta', (ev: any) => {
+      if (replayId && ev.data?.replayId && ev.data.replayId !== replayId) return;
+      totalNs = ev.data?.totalNs || 0;
+      playing = true;
+    });
+    Events.On('recording:replay:progress', (ev: any) => {
+      if (!replayId && ev.data?.replayId) replayId = ev.data.replayId;
+      if (replayId && ev.data?.replayId !== replayId) return;
+      elapsedNs = ev.data?.elapsedNs || 0;
+      totalNs = ev.data?.totalNs || totalNs;
+    });
     unsubOutput = Events.On('recording:replay:output', (ev: any) => {
       LoggingService.Log(`[ReplayViewer] output event ${ev?.data?.data?.length || 0} bytes`, 'DEBUG');
       if (!replayId && ev.data?.replayId) replayId = ev.data.replayId;
@@ -115,6 +129,7 @@
       if (!replayId && ev.data?.replayId) replayId = ev.data.replayId;
       if (replayId && ev.data?.replayId !== replayId) return;
       // Nothing special for now
+      playing = false;
     });
   });
 
@@ -186,12 +201,75 @@
     if (replayId) Events.Emit('recording:replay:stop', { replayId });
     onClose();
   }
+
+  function fmtTime(ns: number): string {
+    const s = Math.floor(ns / 1e9);
+    const m = Math.floor(s / 60);
+    const ss = s % 60;
+    return `${m}:${ss.toString().padStart(2, '0')}`;
+  }
+
+  function onPlayPause() {
+    if (!replayId) return;
+    if (playing) {
+      Events.Emit('recording:replay:pause', { replayId });
+      playing = false;
+    } else {
+      Events.Emit('recording:replay:resume', { replayId });
+      playing = true;
+    }
+  }
+
+  function onRewind() {
+    if (!replayId) return;
+    Events.Emit('recording:replay:rewind', { replayId });
+    playing = true;
+    elapsedNs = 0;
+  }
+
+  function onSeek(event: MouseEvent) {
+    if (!replayId || !totalNs) return;
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const percent = Math.max(0, Math.min(1, x / rect.width));
+    const targetNs = Math.floor(percent * totalNs);
+
+    LoggingService.Log(`[ReplayViewer] seek to ${percent * 100}% (${targetNs}ns / ${totalNs}ns)`, 'DEBUG');
+    Events.Emit('recording:replay:seek', { replayId, targetNs } as any);
+    elapsedNs = targetNs;
+  }
+
+  $effect(() => {
+    if (!replayId && replayIdProp) replayId = replayIdProp;
+  });
 </script>
 
 <Modal show={show} title="Replay Viewer" onClose={close} panelClass="w-[80%] h-[75%] flex flex-col">
   <div class="flex items-center gap-3 p-2" style="border-bottom: 1px solid var(--border-color)">
+    <button class="px-2 py-1 text-xs rounded text-white" style="background: var(--accent-blue)" onclick={onPlayPause}>
+      {playing ? 'Pause' : 'Play'}
+    </button>
+    <button class="px-2 py-1 text-xs rounded" style="background: var(--bg-tertiary)" onclick={onRewind}>
+      Rewind
+    </button>
+    <div
+      class="flex-1 h-2 rounded overflow-hidden cursor-pointer"
+      style="background: var(--bg-tertiary)"
+      onclick={onSeek}
+      role="slider"
+      aria-label="Seek timeline"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={totalNs ? Math.min(100, Math.floor((elapsedNs/Math.max(1,totalNs))*100)) : 0}
+      tabindex="0"
+    >
+      <div style={`width: ${totalNs ? Math.min(100, Math.floor((elapsedNs/Math.max(1,totalNs))*100)) : 0}%; height: 100%; background: var(--accent-blue); transition: width 0.1s ease`}></div>
+    </div>
+    <div class="text-xs" style="color: var(--text-muted)">{fmtTime(elapsedNs)} / {fmtTime(totalNs)}</div>
     <label for="speed_selector" class="text-sm">Speed</label>
-    <select id="speed_selector" bind:value={speed} class="px-2 py-1 rounded border" style="background: var(--bg-tertiary); border-color: var(--border-color)">
+    <select id="speed_selector" bind:value={speed} class="px-2 py-1 rounded border" style="background: var(--bg-tertiary); border-color: var(--border-color)"
+            onchange={() => replayId && Events.Emit('recording:replay:setSpeed', { replayId, speed } as any)}>
       <option value={0.5}>0.5x</option>
       <option value={1.0}>1x</option>
       <option value={2.0}>2x</option>
