@@ -29,7 +29,51 @@ func init() {
 	application.RegisterEvent[map[string]interface{}]("ssh:hostkey_response")
 	application.RegisterEvent[map[string]interface{}]("ssh:known_hosts:list:request")
 	application.RegisterEvent[map[string]interface{}]("ssh:known_hosts:list")
-	application.RegisterEvent[map[string]interface{}]("ssh:known_hosts:delete")
+    application.RegisterEvent[map[string]interface{}]("ssh:known_hosts:delete")
+
+    // Recording events
+    application.RegisterEvent[map[string]interface{}]("recording:start")
+    application.RegisterEvent[map[string]interface{}]("recording:stop")
+    application.RegisterEvent[map[string]interface{}]("recording:started")
+    application.RegisterEvent[map[string]interface{}]("recording:stopped")
+    application.RegisterEvent[map[string]interface{}]("recording:list:request")
+    application.RegisterEvent[map[string]interface{}]("recording:list")
+    application.RegisterEvent[map[string]interface{}]("recording:delete")
+    application.RegisterEvent[map[string]interface{}]("recording:list:error")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:start")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:stop")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:header")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:output")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:resize")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:ended")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:meta")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:progress")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:pause")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:resume")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:rewind")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:setSpeed")
+    application.RegisterEvent[map[string]interface{}]("recording:replay:seek")
+
+    // Key management events
+    application.RegisterEvent[map[string]interface{}]("keys:generate")
+    application.RegisterEvent[map[string]interface{}]("keys:generated")
+    application.RegisterEvent[map[string]interface{}]("keys:import")
+    application.RegisterEvent[map[string]interface{}]("keys:imported")
+    application.RegisterEvent[map[string]interface{}]("keys:list:request")
+    application.RegisterEvent[map[string]interface{}]("keys:list")
+    application.RegisterEvent[map[string]interface{}]("keys:delete")
+    application.RegisterEvent[map[string]interface{}]("keys:deleted")
+    application.RegisterEvent[map[string]interface{}]("keys:export:public")
+    application.RegisterEvent[map[string]interface{}]("keys:public_key")
+    application.RegisterEvent[map[string]interface{}]("keys:error")
+    application.RegisterEvent[map[string]interface{}]("recording:share")
+    application.RegisterEvent[map[string]interface{}]("recording:shared")
+    application.RegisterEvent[map[string]interface{}]("recording:share:error")
+    application.RegisterEvent[map[string]interface{}]("recording:shared_with:request")
+    application.RegisterEvent[map[string]interface{}]("recording:shared_with")
+    application.RegisterEvent[map[string]interface{}]("recording:shared_with:error")
+    application.RegisterEvent[map[string]interface{}]("recording:revoke_share")
+    application.RegisterEvent[map[string]interface{}]("recording:share_revoked")
 }
 
 func main() {
@@ -73,19 +117,28 @@ func main() {
 		},
 	})
 
-	// Host key service for SSH verification
-	hostKeyService := NewHostKeyService(app, db)
+    // Host key service for SSH verification
+    hostKeyService := NewHostKeyService(app, db)
 
-	// Create terminal service (needs app instance for events and host key verification)
-	terminalService := NewTerminalService(app, hostKeyService)
-	app.RegisterService(application.NewService(terminalService))
+    // Recording service for binary terminal recordings
+    recordingService := NewRecordingService(app, db)
+    app.RegisterService(application.NewService(recordingService))
+
+    // Key management service for secure recording sharing
+    keyMgmtService := NewKeyManagementService(db, app)
+    keyMgmtService.Setup()
+    app.RegisterService(application.NewService(keyMgmtService))
+
+    // Create terminal service (needs app instance for events and host key verification and recorder)
+    terminalService := NewTerminalService(app, hostKeyService, recordingService)
+    app.RegisterService(application.NewService(terminalService))
 
 	sftpService := NewSFTPService(app, terminalService)
 	app.RegisterService(application.NewService(sftpService))
 
-	// Create theme service (needs app context)
-	themeService := NewThemeService(app.Context(), settingsService)
-	app.RegisterService(application.NewService(themeService))
+    // Create theme service (needs app context)
+    themeService := NewThemeService(app.Context(), settingsService)
+    app.RegisterService(application.NewService(themeService))
 
 	// Create and start system stats service (needs terminal service to check session types)
 	systemStatsService := NewSystemStatsService(terminalService)

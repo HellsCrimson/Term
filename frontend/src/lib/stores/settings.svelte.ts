@@ -9,6 +9,8 @@ export interface AppSettings {
   restoreTabsOnStartup: boolean;
   confirmTabClose: boolean;
   showStatusBar: boolean;
+  recordingDefaultCaptureInput: boolean;
+  recordingDefaultEncrypt: boolean;
 }
 
 class SettingsStore {
@@ -19,7 +21,9 @@ class SettingsStore {
     autoLaunch: true,
     restoreTabsOnStartup: true,
     confirmTabClose: false,
-    showStatusBar: true
+    showStatusBar: true,
+    recordingDefaultCaptureInput: false,
+    recordingDefaultEncrypt: true
   });
   loading = $state(false);
 
@@ -37,7 +41,9 @@ class SettingsStore {
         autoLaunch: allSettings.auto_launch === 'true',
         restoreTabsOnStartup: (allSettings.restore_tabs_on_startup || 'true') === 'true',
         confirmTabClose: (allSettings.confirm_tab_close || 'false') === 'true',
-        showStatusBar: (allSettings.show_status_bar || 'true') === 'true'
+        showStatusBar: (allSettings.show_status_bar || 'true') === 'true',
+        recordingDefaultCaptureInput: (allSettings.recording_default_capture_input || 'false') === 'true',
+        recordingDefaultEncrypt: (allSettings.recording_default_encrypt || 'true') === 'true'
       };
 
       console.log('Parsed settings:', this.settings);
@@ -46,6 +52,26 @@ class SettingsStore {
       console.error('Failed to load settings:', error);
     } finally {
       this.loading = false;
+    }
+  }
+
+  async setRecordingDefaultCaptureInput(v: boolean) {
+    try {
+      await SettingsService.SetSetting('recording_default_capture_input', v.toString(), 'bool');
+      this.settings.recordingDefaultCaptureInput = v;
+    } catch (error) {
+      console.error('Failed to set recording default capture input:', error);
+      throw error;
+    }
+  }
+
+  async setRecordingDefaultEncrypt(v: boolean) {
+    try {
+      await SettingsService.SetSetting('recording_default_encrypt', v.toString(), 'bool');
+      this.settings.recordingDefaultEncrypt = v;
+    } catch (error) {
+      console.error('Failed to set recording default encrypt:', error);
+      throw error;
     }
   }
 
