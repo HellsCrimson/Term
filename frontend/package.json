@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@sveltejs/kit": "^2.18.0",
+    "@sveltejs/kit": "^2.49.5",
     "@wailsio/runtime": "^3.0.0-alpha.77",
     "flowbite": "^2.5.2",
     "ghostty-web": "^0.4.0",
